@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Tracker - SharePoint List View</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f3f2f1; }
+        .status-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; color: #fff; }
+        .priority-badge { display: inline-block; padding: 1px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; color: #fff; }
+        .progress-bar-container { width: 80px; height: 6px; background: #edebe9; border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; }
+        .progress-bar-fill { height: 100%; border-radius: 3px; }
+        .list-row:hover { background: #f3f2f1; }
+        .group-header { background: #faf9f8; border-top: 1px solid #edebe9; }
+        .custom-btn { background: #0078d4; color: white; padding: 4px 12px; border-radius: 3px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; }
+        .custom-btn:hover { background: #106ebe; }
+    </style>
+</head>
+<body>
+    <!-- SharePoint Top Bar -->
+    <div style="background: #0078d4; height: 48px; display: flex; align-items: center; padding: 0 16px; color: white;">
+        <div style="display: flex; align-items: center; gap: 16px; flex: 1;">
+            <!-- Waffle Menu -->
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="white">
+                <rect x="1" y="1" width="4" height="4" rx="0.5"/>
+                <rect x="8" y="1" width="4" height="4" rx="0.5"/>
+                <rect x="15" y="1" width="4" height="4" rx="0.5"/>
+                <rect x="1" y="8" width="4" height="4" rx="0.5"/>
+                <rect x="8" y="8" width="4" height="4" rx="0.5"/>
+                <rect x="15" y="8" width="4" height="4" rx="0.5"/>
+                <rect x="1" y="15" width="4" height="4" rx="0.5"/>
+                <rect x="8" y="15" width="4" height="4" rx="0.5"/>
+                <rect x="15" y="15" width="4" height="4" rx="0.5"/>
+            </svg>
+            <span style="font-weight: 600; font-size: 16px;">SharePoint</span>
+        </div>
+        <!-- Search -->
+        <div style="flex: 2; display: flex; justify-content: center;">
+            <div style="background: rgba(255,255,255,0.15); border-radius: 4px; padding: 6px 16px; width: 400px; display: flex; align-items: center; gap: 8px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="rgba(255,255,255,0.8)"><path d="M11.4 10l4.3 4.3-1.4 1.4L10 11.4A6.5 6.5 0 1111.4 10zM6.5 11A4.5 4.5 0 1011 6.5 4.5 4.5 0 006.5 11z"/></svg>
+                <span style="color: rgba(255,255,255,0.7); font-size: 14px;">Search this site</span>
+            </div>
+        </div>
+        <!-- User -->
+        <div style="flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 16px;">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="white"><path d="M10 2a6 6 0 00-6 6v4l-2 2v1h16v-1l-2-2V8a6 6 0 00-6-6zM10 18a2 2 0 01-2-2h4a2 2 0 01-2 2z"/></svg>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="white"><path d="M17 10.5V7A7 7 0 003 7v3.5L1 13v1h18v-1z"/></svg>
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: #5c2d91; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;">DS</div>
+        </div>
+    </div>
+
+    <!-- Site Header -->
+    <div style="background: white; padding: 16px 32px; border-bottom: 1px solid #edebe9;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 4px; background: #0078d4; display: flex; align-items: center; justify-content: center;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm2 2h10v2H7V7zm0 4h10v2H7v-2zm0 4h6v2H7v-2z"/></svg>
+            </div>
+            <div>
+                <div style="font-size: 18px; font-weight: 700; color: #323130;">Workflow Automation</div>
+                <div style="font-size: 12px; color: #605e5c;">SharePoint Online &gt; Sites &gt; Workflow Automation</div>
+            </div>
+        </div>
+        <!-- Navigation -->
+        <div style="display: flex; gap: 24px; margin-top: 16px; font-size: 14px;">
+            <span style="color: #0078d4; font-weight: 600; border-bottom: 2px solid #0078d4; padding-bottom: 8px;">Project Tracker</span>
+            <span style="color: #605e5c; padding-bottom: 8px;">Document Approval</span>
+            <span style="color: #605e5c; padding-bottom: 8px;">Change Requests</span>
+            <span style="color: #605e5c; padding-bottom: 8px;">Onboarding</span>
+            <span style="color: #605e5c; padding-bottom: 8px;">Documents</span>
+        </div>
+    </div>
+
+    <!-- List Content -->
+    <div style="padding: 20px 32px;">
+        <!-- List Title -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+            <h1 style="font-size: 22px; font-weight: 700; color: #323130; margin: 0;">Project Tracker</h1>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <span style="font-size: 12px; color: #605e5c;">10 items</span>
+                <span style="color: #c8c6c4;">|</span>
+                <span style="font-size: 12px; color: #605e5c;">Grouped by Status</span>
+            </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div style="background: white; border: 1px solid #edebe9; border-radius: 4px 4px 0 0; padding: 8px 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <button style="background: #0078d4; color: white; padding: 6px 16px; border-radius: 3px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M6 0v12M0 6h12" stroke="white" stroke-width="2"/></svg>
+                New
+            </button>
+            <button style="background: transparent; color: #323130; padding: 6px 12px; border-radius: 3px; font-size: 13px; border: 1px solid #8a8886; cursor: pointer;">Edit in grid view</button>
+            <button style="background: transparent; color: #323130; padding: 6px 12px; border-radius: 3px; font-size: 13px; border: 1px solid #8a8886; cursor: pointer;">Share</button>
+            <button style="background: transparent; color: #323130; padding: 6px 12px; border-radius: 3px; font-size: 13px; border: 1px solid #8a8886; cursor: pointer;">Export</button>
+            <span style="color: #c8c6c4; margin: 0 4px;">|</span>
+            <!-- Custom SPFx Buttons -->
+            <button class="custom-btn" style="display: flex; align-items: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="white"><path d="M5.5 10.5L2 7l1.4-1.4 2.1 2.1 4.6-4.6L11.5 4.5z"/></svg>
+                Bulk Approve
+            </button>
+            <button class="custom-btn" style="display: flex; align-items: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="white"><path d="M7 1v8M3 5l4 4 4-4M2 11h10v1H2z"/></svg>
+                Export CSV
+            </button>
+            <button class="custom-btn" style="display: flex; align-items: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="white"><circle cx="7" cy="4" r="2.5"/><path d="M2.5 12c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5"/></svg>
+                Assign To
+            </button>
+        </div>
+
+        <!-- List Table -->
+        <div style="background: white; border: 1px solid #edebe9; border-top: none; overflow: hidden;">
+            <!-- Column Headers -->
+            <div style="display: grid; grid-template-columns: 40px 2fr 120px 90px 150px 110px 100px 120px; padding: 8px 12px; background: #faf9f8; border-bottom: 1px solid #edebe9; font-size: 12px; font-weight: 600; color: #605e5c;">
+                <div style="display: flex; align-items: center;"><input type="checkbox" style="margin: 0;"></div>
+                <div>Title</div>
+                <div>Status</div>
+                <div>Priority</div>
+                <div>Assigned To</div>
+                <div>Due Date</div>
+                <div>% Complete</div>
+                <div>Category</div>
+            </div>
+
+            <!-- Group: In Progress -->
+            <div class="group-header" style="padding: 8px 12px; font-size: 13px; font-weight: 600; color: #323130; display: flex; align-items: center; gap: 8px;">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="#605e5c"><path d="M2 4l4 4 4-4z"/></svg>
+                <span class="status-badge" style="background: #0078d4;">In Progress</span>
+                <span style="color: #605e5c; font-weight: 400;">(3)</span>
+            </div>
+
+            <!-- Row 1 -->
+            <div class="list-row" style="display: grid; grid-template-columns: 40px 2fr 120px 90px 150px 110px 100px 120px; padding: 10px 12px; border-bottom: 1px solid #f3f2f1; font-size: 13px; color: #323130; align-items: center;">
+                <div><input type="checkbox"></div>
+                <div style="color: #0078d4; font-weight: 600;">Cloud Migration Phase 2</div>
+                <div><span class="status-badge" style="background: #0078d4;">In Progress</span></div>
+                <div><span class="priority-badge" style="background: #a80000;">High</span></div>
+                <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: #0078d4; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">SM</div>Sarah Mitchell</div>
+                <div>Apr 15, 2026</div>
+                <div style="display: flex; align-items: center; gap: 6px;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width: 65%; background: #0078d4;"></div></div><span style="font-size: 11px; color: #605e5c;">65%</span></div>
+                <div>Infrastructure</div>
+            </div>
+
+            <!-- Row 2 -->
+            <div class="list-row" style="display: grid; grid-template-columns: 40px 2fr 120px 90px 150px 110px 100px 120px; padding: 10px 12px; border-bottom: 1px solid #f3f2f1; font-size: 13px; color: #323130; align-items: center;">
+                <div><input type="checkbox"></div>
+                <div style="color: #0078d4; font-weight: 600;">API Gateway Redesign</div>
+                <div><span class="status-badge" style="background: #0078d4;">In Progress</span></div>
+                <div><span class="priority-badge" style="background: #d83b01;">Medium</span></div>
+                <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: #107c10; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">JC</div>James Chen</div>
+                <div>Apr 28, 2026</div>
+                <div style="display: flex; align-items: center; gap: 6px;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width: 40%; background: #0078d4;"></div></div><span style="font-size: 11px; color: #605e5c;">40%</span></div>
+                <div>Development</div>
+            </div>
+
+            <!-- Row 3 -->
+            <div class="list-row" style="display: grid; grid-template-columns: 40px 2fr 120px 90px 150px 110px 100px 120px; padding: 10px 12px; border-bottom: 1px solid #f3f2f1; font-size: 13px; color: #323130; align-items: center;">
+                <div><input type="checkbox"></div>
+                <div style="color: #0078d4; font-weight: 600;">Security Audit Remediation</div>
+                <div><span class="status-badge" style="background: #0078d4;">In Progress</span></div>
+                <div><span class="priority-badge" style="background: #a80000;">High</span></div>
+                <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: #5c2d91; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">RP</div>Rachel Park</div>
+                <div>Apr 10, 2026</div>
+                <div style="display: flex; align-items: center; gap: 6px;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width: 80%; background: #0078d4;"></div></div><span style="font-size: 11px; color: #605e5c;">80%</span></div>
+                <div>Security</div>
+            </div>
+
+            <!-- Group: Under Review -->
+            <div class="group-header" style="padding: 8px 12px; font-size: 13px; font-weight: 600; color: #323130; display: flex; align-items: center; gap: 8px;">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="#605e5c"><path d="M2 4l4 4 4-4z"/></svg>
+                <span class="status-badge" style="background: #d83b01;">Under Review</span>
+                <span style="color: #605e5c; font-weight: 400;">(2)</span>
+            </div>
+
+            <!-- Row 4 -->
+            <div class="list-row" style="display: grid; grid-template-columns: 40px 2fr 120px 90px 150px 110px 100px 120px; padding: 10px 12px; border-bottom: 1px solid #f3f2f1; font-size: 13px; color: #323130; align-items: center;">
+                <div><input type="checkbox"></div>
+                <div style="color: #0078d4; font-weight: 600;">Data Governance Policy v3</div>
+                <div><span class="status-badge" style="background: #d83b01;">Under Review</span></div>
+                <div><span class="priority-badge" style="background: #d83b01;">Medium</span></div>
+                <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: #ca5010; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">ML</div>Mike Liu</div>
+                <div>Apr 5, 2026</div>
+                <div style="display: flex; align-items: center; gap: 6px;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width: 90%; background: #d83b01;"></div></div><span style="font-size: 11px; color: #605e5c;">90%</span></div>
+                <div>Compliance</div>
+            </div>
+
+            <!-- Row 5 -->
+            <div class="list-row" style="display: grid; grid-template-columns: 40px 2fr 120px 90px 150px 110px 100px 120px; padding: 10px 12px; border-bottom: 1px solid #f3f2f1; font-size: 13px; color: #323130; align-items: center;">
+                <div><input type="checkbox"></div>
+                <div style="color: #0078d4; font-weight: 600;">Mobile App Refresh</div>
+                <div><span class="status-badge" style="background: #d83b01;">Under Review</span></div>
+                <div><span class="priority-badge" style="background: #107c10;">Low</span></div>
+                <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: #008272; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">AK</div>Anna Kim</div>
+                <div>May 1, 2026</div>
+                <div style="display: flex; align-items: center; gap: 6px;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width: 95%; background: #d83b01;"></div></div><span style="font-size: 11px; color: #605e5c;">95%</span></div>
+                <div>Development</div>
+            </div>
+
+            <!-- Group: Not Started -->
+            <div class="group-header" style="padding: 8px 12px; font-size: 13px; font-weight: 600; color: #323130; display: flex; align-items: center; gap: 8px;">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="#605e5c"><path d="M2 4l4 4 4-4z"/></svg>
+                <span class="status-badge" style="background: #808080;">Not Started</span>
+                <span style="color: #605e5c; font-weight: 400;">(2)</span>
+            </div>
+
+            <!-- Row 6 -->
+            <div class="list-row" style="display: grid; grid-template-columns: 40px 2fr 120px 90px 150px 110px 100px 120px; padding: 10px 12px; border-bottom: 1px solid #f3f2f1; font-size: 13px; color: #323130; align-items: center;">
+                <div><input type="checkbox"></div>
+                <div style="color: #0078d4; font-weight: 600;">Vendor Onboarding Portal</div>
+                <div><span class="status-badge" style="background: #808080;">Not Started</span></div>
+                <div><span class="priority-badge" style="background: #d83b01;">Medium</span></div>
+                <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: #0078d4; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">DW</div>David Wang</div>
+                <div>May 15, 2026</div>
+                <div style="display: flex; align-items: center; gap: 6px;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width: 0%; background: #808080;"></div></div><span style="font-size: 11px; color: #605e5c;">0%</span></div>
+                <div>Operations</div>
+            </div>
+
+            <!-- Row 7 -->
+            <div class="list-row" style="display: grid; grid-template-columns: 40px 2fr 120px 90px 150px 110px 100px 120px; padding: 10px 12px; border-bottom: 1px solid #f3f2f1; font-size: 13px; color: #323130; align-items: center;">
+                <div><input type="checkbox"></div>
+                <div style="color: #0078d4; font-weight: 600;">Disaster Recovery Testing</div>
+                <div><span class="status-badge" style="background: #808080;">Not Started</span></div>
+                <div><span class="priority-badge" style="background: #a80000;">High</span></div>
+                <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: #5c2d91; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">RP</div>Rachel Park</div>
+                <div>May 30, 2026</div>
+                <div style="display: flex; align-items: center; gap: 6px;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width: 0%; background: #808080;"></div></div><span style="font-size: 11px; color: #605e5c;">0%</span></div>
+                <div>Infrastructure</div>
+            </div>
+
+            <!-- Group: Approved -->
+            <div class="group-header" style="padding: 8px 12px; font-size: 13px; font-weight: 600; color: #323130; display: flex; align-items: center; gap: 8px;">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="#605e5c"><path d="M2 4l4 4 4-4z"/></svg>
+                <span class="status-badge" style="background: #107c10;">Approved</span>
+                <span style="color: #605e5c; font-weight: 400;">(2)</span>
+            </div>
+
+            <!-- Row 8 -->
+            <div class="list-row" style="display: grid; grid-template-columns: 40px 2fr 120px 90px 150px 110px 100px 120px; padding: 10px 12px; border-bottom: 1px solid #f3f2f1; font-size: 13px; color: #323130; align-items: center;">
+                <div><input type="checkbox"></div>
+                <div style="color: #0078d4; font-weight: 600;">Q1 Budget Allocation</div>
+                <div><span class="status-badge" style="background: #107c10;">Approved</span></div>
+                <div><span class="priority-badge" style="background: #a80000;">High</span></div>
+                <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: #0078d4; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">SM</div>Sarah Mitchell</div>
+                <div>Mar 15, 2026</div>
+                <div style="display: flex; align-items: center; gap: 6px;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width: 100%; background: #107c10;"></div></div><span style="font-size: 11px; color: #605e5c;">100%</span></div>
+                <div>Finance</div>
+            </div>
+
+            <!-- Row 9 -->
+            <div class="list-row" style="display: grid; grid-template-columns: 40px 2fr 120px 90px 150px 110px 100px 120px; padding: 10px 12px; border-bottom: 1px solid #f3f2f1; font-size: 13px; color: #323130; align-items: center;">
+                <div><input type="checkbox"></div>
+                <div style="color: #0078d4; font-weight: 600;">SSO Integration</div>
+                <div><span class="status-badge" style="background: #107c10;">Approved</span></div>
+                <div><span class="priority-badge" style="background: #d83b01;">Medium</span></div>
+                <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: #107c10; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">JC</div>James Chen</div>
+                <div>Mar 28, 2026</div>
+                <div style="display: flex; align-items: center; gap: 6px;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width: 100%; background: #107c10;"></div></div><span style="font-size: 11px; color: #605e5c;">100%</span></div>
+                <div>Security</div>
+            </div>
+
+            <!-- Group: Rejected -->
+            <div class="group-header" style="padding: 8px 12px; font-size: 13px; font-weight: 600; color: #323130; display: flex; align-items: center; gap: 8px;">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="#605e5c"><path d="M2 4l4 4 4-4z"/></svg>
+                <span class="status-badge" style="background: #a80000;">Rejected</span>
+                <span style="color: #605e5c; font-weight: 400;">(1)</span>
+            </div>
+
+            <!-- Row 10 -->
+            <div class="list-row" style="display: grid; grid-template-columns: 40px 2fr 120px 90px 150px 110px 100px 120px; padding: 10px 12px; border-bottom: 1px solid #f3f2f1; font-size: 13px; color: #323130; align-items: center;">
+                <div><input type="checkbox"></div>
+                <div style="color: #0078d4; font-weight: 600;">Legacy CRM Replacement</div>
+                <div><span class="status-badge" style="background: #a80000;">Rejected</span></div>
+                <div><span class="priority-badge" style="background: #107c10;">Low</span></div>
+                <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: #ca5010; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">ML</div>Mike Liu</div>
+                <div>Mar 1, 2026</div>
+                <div style="display: flex; align-items: center; gap: 6px;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width: 15%; background: #a80000;"></div></div><span style="font-size: 11px; color: #605e5c;">15%</span></div>
+                <div>Development</div>
+            </div>
+        </div>
+
+        <!-- Footer info -->
+        <div style="padding: 12px 0; font-size: 12px; color: #605e5c; display: flex; justify-content: space-between;">
+            <span>Showing 10 of 10 items &middot; Grouped by Status</span>
+            <span>Last modified: March 30, 2026 by Sarah Mitchell</span>
+        </div>
+    </div>
+</body>
+</html>

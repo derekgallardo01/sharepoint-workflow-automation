@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="utf-8"?>
+<pnp:Provisioning xmlns:pnp="http://schemas.dev.office.com/PnP/2023/01/ProvisioningSchema">
+  <pnp:Preferences Generator="PnP" />
+  <pnp:Templates ID="CONTAINER-TEMPLATE-CHANGE-REQUEST">
+    <pnp:ProvisioningTemplate ID="TEMPLATE-CHANGE-REQUEST" Version="1" BaseSiteTemplate="STS#3">
+
+      <pnp:SiteFields>
+        <Field ID="{A1B2C3D4-E5F6-4789-0ABC-D1E2F3A4B5C6}"
+               Name="CRDescription"
+               DisplayName="Description"
+               Type="Note"
+               RichText="TRUE"
+               NumLines="6"
+               Group="Workflow Automation" />
+
+        <Field ID="{B2C3D4E5-F6A7-4890-1BCD-E2F3A4B5C6D7}"
+               Name="CRRequestedBy"
+               DisplayName="Requested By"
+               Type="User"
+               UserSelectionMode="PeopleOnly"
+               Group="Workflow Automation" />
+
+        <Field ID="{C3D4E5F6-A7B8-4901-2CDE-F3A4B5C6D7E8}"
+               Name="CRAssignedTo"
+               DisplayName="Assigned To"
+               Type="User"
+               UserSelectionMode="PeopleOnly"
+               Group="Workflow Automation" />
+
+        <Field ID="{D4E5F6A7-B8C9-4012-3DEF-A4B5C6D7E8F9}"
+               Name="CRStatus"
+               DisplayName="Status"
+               Type="Choice"
+               Group="Workflow Automation">
+          <CHOICES>
+            <CHOICE>New</CHOICE>
+            <CHOICE>Triaged</CHOICE>
+            <CHOICE>In Progress</CHOICE>
+            <CHOICE>Testing</CHOICE>
+            <CHOICE>Deployed</CHOICE>
+            <CHOICE>Closed</CHOICE>
+          </CHOICES>
+          <Default>New</Default>
+        </Field>
+
+        <Field ID="{E5F6A7B8-C9D0-4123-4EFA-B5C6D7E8F9A0}"
+               Name="CRImpact"
+               DisplayName="Impact"
+               Type="Choice"
+               Group="Workflow Automation">
+          <CHOICES>
+            <CHOICE>Low</CHOICE>
+            <CHOICE>Medium</CHOICE>
+            <CHOICE>High</CHOICE>
+            <CHOICE>Critical</CHOICE>
+          </CHOICES>
+          <Default>Medium</Default>
+        </Field>
+
+        <Field ID="{F6A7B8C9-D0E1-4234-5FAB-C6D7E8F9A0B1}"
+               Name="CRSystem"
+               DisplayName="System"
+               Type="Choice"
+               Group="Workflow Automation">
+          <CHOICES>
+            <CHOICE>SharePoint</CHOICE>
+            <CHOICE>Teams</CHOICE>
+            <CHOICE>Power Platform</CHOICE>
+            <CHOICE>Azure AD</CHOICE>
+            <CHOICE>Exchange</CHOICE>
+            <CHOICE>ERP</CHOICE>
+            <CHOICE>CRM</CHOICE>
+            <CHOICE>Other</CHOICE>
+          </CHOICES>
+        </Field>
+
+        <Field ID="{A7B8C9D0-E1F2-4345-6ABC-D7E8F9A0B1C2}"
+               Name="CRTargetDate"
+               DisplayName="Target Date"
+               Type="DateTime"
+               Format="DateOnly"
+               Group="Workflow Automation" />
+
+        <Field ID="{B8C9D0E1-F2A3-4456-7BCD-E8F9A0B1C2D3}"
+               Name="CRActualDate"
+               DisplayName="Actual Completion Date"
+               Type="DateTime"
+               Format="DateOnly"
+               Group="Workflow Automation" />
+
+        <Field ID="{C9D0E1F2-A3B4-4567-8CDE-F9A0B1C2D3E4}"
+               Name="CRResolution"
+               DisplayName="Resolution"
+               Type="Note"
+               RichText="TRUE"
+               NumLines="6"
+               Group="Workflow Automation" />
+      </pnp:SiteFields>
+
+      <pnp:ContentTypes>
+        <pnp:ContentType ID="0x01006C0E5F9D8A3B7241CD6E7F8A9B01"
+                         Name="ChangeRequest"
+                         Description="Content type for change request log entries"
+                         Group="Workflow Automation">
+          <pnp:FieldRefs>
+            <pnp:FieldRef ID="{fa564e0f-0c70-4ab9-b863-0177e6ddd247}" Name="Title" Required="true" />
+            <pnp:FieldRef ID="{A1B2C3D4-E5F6-4789-0ABC-D1E2F3A4B5C6}" Name="CRDescription" Required="true" />
+            <pnp:FieldRef ID="{B2C3D4E5-F6A7-4890-1BCD-E2F3A4B5C6D7}" Name="CRRequestedBy" Required="true" />
+            <pnp:FieldRef ID="{C3D4E5F6-A7B8-4901-2CDE-F3A4B5C6D7E8}" Name="CRAssignedTo" />
+            <pnp:FieldRef ID="{D4E5F6A7-B8C9-4012-3DEF-A4B5C6D7E8F9}" Name="CRStatus" Required="true" />
+            <pnp:FieldRef ID="{E5F6A7B8-C9D0-4123-4EFA-B5C6D7E8F9A0}" Name="CRImpact" Required="true" />
+            <pnp:FieldRef ID="{F6A7B8C9-D0E1-4234-5FAB-C6D7E8F9A0B1}" Name="CRSystem" />
+            <pnp:FieldRef ID="{A7B8C9D0-E1F2-4345-6ABC-D7E8F9A0B1C2}" Name="CRTargetDate" />
+            <pnp:FieldRef ID="{B8C9D0E1-F2A3-4456-7BCD-E8F9A0B1C2D3}" Name="CRActualDate" />
+            <pnp:FieldRef ID="{C9D0E1F2-A3B4-4567-8CDE-F9A0B1C2D3E4}" Name="CRResolution" />
+          </pnp:FieldRefs>
+        </pnp:ContentType>
+      </pnp:ContentTypes>
+
+      <pnp:Lists>
+        <pnp:ListInstance Title="Change Request Log"
+                          Description="Tracks change requests across systems with full lifecycle management"
+                          TemplateType="100"
+                          Url="Lists/ChangeRequests"
+                          EnableVersioning="true"
+                          EnableMinorVersions="false"
+                          ContentTypesEnabled="true">
+
+          <pnp:ContentTypeBindings>
+            <pnp:ContentTypeBinding ContentTypeID="0x01006C0E5F9D8A3B7241CD6E7F8A9B01" Default="true" />
+          </pnp:ContentTypeBindings>
+
+          <pnp:Views>
+            <View DisplayName="All Requests" DefaultView="TRUE" MobileDefaultView="TRUE" BaseViewID="1" Type="HTML">
+              <ViewFields>
+                <FieldRef Name="LinkTitle" />
+                <FieldRef Name="CRStatus" />
+                <FieldRef Name="CRImpact" />
+                <FieldRef Name="CRSystem" />
+                <FieldRef Name="CRRequestedBy" />
+                <FieldRef Name="CRAssignedTo" />
+                <FieldRef Name="CRTargetDate" />
+              </ViewFields>
+              <Query>
+                <OrderBy>
+                  <FieldRef Name="Created" Ascending="FALSE" />
+                </OrderBy>
+              </Query>
+              <RowLimit Paged="TRUE">30</RowLimit>
+            </View>
+
+            <View DisplayName="Open Requests" BaseViewID="2" Type="HTML">
+              <ViewFields>
+                <FieldRef Name="LinkTitle" />
+                <FieldRef Name="CRStatus" />
+                <FieldRef Name="CRImpact" />
+                <FieldRef Name="CRSystem" />
+                <FieldRef Name="CRAssignedTo" />
+                <FieldRef Name="CRTargetDate" />
+              </ViewFields>
+              <Query>
+                <Where>
+                  <And>
+                    <Neq>
+                      <FieldRef Name="CRStatus" />
+                      <Value Type="Choice">Deployed</Value>
+                    </Neq>
+                    <Neq>
+                      <FieldRef Name="CRStatus" />
+                      <Value Type="Choice">Closed</Value>
+                    </Neq>
+                  </And>
+                </Where>
+                <OrderBy>
+                  <FieldRef Name="CRImpact" />
+                  <FieldRef Name="CRTargetDate" />
+                </OrderBy>
+              </Query>
+              <RowLimit Paged="TRUE">30</RowLimit>
+            </View>
+
+            <View DisplayName="My Requests" BaseViewID="3" Type="HTML">
+              <ViewFields>
+                <FieldRef Name="LinkTitle" />
+                <FieldRef Name="CRStatus" />
+                <FieldRef Name="CRImpact" />
+                <FieldRef Name="CRAssignedTo" />
+                <FieldRef Name="CRTargetDate" />
+                <FieldRef Name="CRActualDate" />
+              </ViewFields>
+              <Query>
+                <Where>
+                  <Eq>
+                    <FieldRef Name="CRRequestedBy" />
+                    <Value Type="Integer"><UserID /></Value>
+                  </Eq>
+                </Where>
+                <OrderBy>
+                  <FieldRef Name="Created" Ascending="FALSE" />
+                </OrderBy>
+              </Query>
+              <RowLimit Paged="TRUE">30</RowLimit>
+            </View>
+
+            <View DisplayName="By System" BaseViewID="4" Type="HTML">
+              <ViewFields>
+                <FieldRef Name="LinkTitle" />
+                <FieldRef Name="CRStatus" />
+                <FieldRef Name="CRImpact" />
+                <FieldRef Name="CRAssignedTo" />
+                <FieldRef Name="CRTargetDate" />
+              </ViewFields>
+              <Query>
+                <GroupBy Collapse="TRUE" GroupLimit="30">
+                  <FieldRef Name="CRSystem" />
+                </GroupBy>
+                <OrderBy>
+                  <FieldRef Name="CRImpact" />
+                </OrderBy>
+              </Query>
+              <RowLimit Paged="TRUE">100</RowLimit>
+            </View>
+
+            <View DisplayName="By Impact" BaseViewID="5" Type="HTML">
+              <ViewFields>
+                <FieldRef Name="LinkTitle" />
+                <FieldRef Name="CRStatus" />
+                <FieldRef Name="CRSystem" />
+                <FieldRef Name="CRAssignedTo" />
+                <FieldRef Name="CRTargetDate" />
+              </ViewFields>
+              <Query>
+                <GroupBy Collapse="TRUE" GroupLimit="30">
+                  <FieldRef Name="CRImpact" />
+                </GroupBy>
+                <OrderBy>
+                  <FieldRef Name="CRStatus" />
+                </OrderBy>
+              </Query>
+              <RowLimit Paged="TRUE">100</RowLimit>
+            </View>
+          </pnp:Views>
+
+        </pnp:ListInstance>
+      </pnp:Lists>
+
+    </pnp:ProvisioningTemplate>
+  </pnp:Templates>
+</pnp:Provisioning>

@@ -1,0 +1,492 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "name": "Multi-Stage Document Approval",
+    "description": "Routes documents through manager and department head approval with escalation logic",
+    "category": "Approval",
+    "tags": ["approval", "document", "multi-stage", "escalation"]
+  },
+  "parameters": {
+    "$connections": {
+      "defaultValue": {},
+      "type": "Object"
+    },
+    "siteUrl": {
+      "defaultValue": "https://contoso.sharepoint.com/sites/workflow-demo",
+      "type": "String"
+    },
+    "approvalListId": {
+      "defaultValue": "",
+      "type": "String",
+      "metadata": {
+        "description": "GUID of the Document Approval Queue list"
+      }
+    },
+    "escalationDaysReminder": {
+      "defaultValue": 3,
+      "type": "Int"
+    },
+    "escalationDaysAutoEscalate": {
+      "defaultValue": 5,
+      "type": "Int"
+    }
+  },
+  "triggers": {
+    "When_an_item_is_created_or_modified": {
+      "type": "ApiConnectionWebhook",
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+          }
+        },
+        "body": {
+          "NotificationUrl": "@{listCallbackUrl()}"
+        },
+        "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('approvalListId')))}/onupdateditems"
+      },
+      "conditions": [
+        {
+          "expression": "@equals(triggerOutputs()?['body/ApprovalStatus/Value'], 'Pending')"
+        }
+      ]
+    }
+  },
+  "actions": {
+    "Initialize_ApprovalOutcome": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "ApprovalOutcome",
+            "type": "string",
+            "value": "Pending"
+          }
+        ]
+      },
+      "runAfter": {}
+    },
+    "Initialize_CurrentStage": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "CurrentStage",
+            "type": "string",
+            "value": "Manager"
+          }
+        ]
+      },
+      "runAfter": {}
+    },
+    "Get_Submitter_Profile": {
+      "type": "ApiConnection",
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['office365users']['connectionId']"
+          }
+        },
+        "method": "get",
+        "path": "/users/@{triggerOutputs()?['body/ApprovalSubmitter/Email']}"
+      },
+      "runAfter": {
+        "Initialize_ApprovalOutcome": ["Succeeded"],
+        "Initialize_CurrentStage": ["Succeeded"]
+      }
+    },
+    "Get_Manager": {
+      "type": "ApiConnection",
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['office365users']['connectionId']"
+          }
+        },
+        "method": "get",
+        "path": "/users/@{triggerOutputs()?['body/ApprovalSubmitter/Email']}/manager"
+      },
+      "runAfter": {
+        "Get_Submitter_Profile": ["Succeeded"]
+      }
+    },
+    "Stage_1_Manager_Approval": {
+      "type": "ApiConnection",
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['approvals']['connectionId']"
+          }
+        },
+        "method": "post",
+        "path": "/v2/approvals",
+        "body": {
+          "title": "Document Approval: @{triggerOutputs()?['body/Title']}",
+          "assignedTo": "@{outputs('Get_Manager')?['body/mail']}",
+          "details": "**Submitted by:** @{triggerOutputs()?['body/ApprovalSubmitter/DisplayName']}\n\n**Document:** @{triggerOutputs()?['body/DocumentLink/Url']}\n\n**Priority:** @{triggerOutputs()?['body/ApprovalPriority/Value']}\n\n**Comments:** @{triggerOutputs()?['body/ApprovalComments']}\n\nPlease review and approve or reject this document.",
+          "itemLink": "@{triggerOutputs()?['body/DocumentLink/Url']}",
+          "itemLinkDescription": "Open Document",
+          "requestType": "Approve/Reject",
+          "responseOptions": ["Approve", "Reject"]
+        }
+      },
+      "runAfter": {
+        "Get_Manager": ["Succeeded"]
+      }
+    },
+    "Check_Manager_Response": {
+      "type": "If",
+      "expression": {
+        "and": [
+          {
+            "equals": [
+              "@outputs('Stage_1_Manager_Approval')?['body/outcome']",
+              "Approve"
+            ]
+          }
+        ]
+      },
+      "runAfter": {
+        "Stage_1_Manager_Approval": ["Succeeded"]
+      },
+      "actions": {
+        "Get_Department_Head": {
+          "type": "ApiConnection",
+          "inputs": {
+            "host": {
+              "connection": {
+                "name": "@parameters('$connections')['office365users']['connectionId']"
+              }
+            },
+            "method": "get",
+            "path": "/users/@{outputs('Get_Manager')?['body/mail']}/manager"
+          }
+        },
+        "Set_Stage_to_DeptHead": {
+          "type": "SetVariable",
+          "inputs": {
+            "name": "CurrentStage",
+            "value": "Department Head"
+          },
+          "runAfter": {
+            "Get_Department_Head": ["Succeeded"]
+          }
+        },
+        "Stage_2_Department_Head_Approval": {
+          "type": "ApiConnection",
+          "inputs": {
+            "host": {
+              "connection": {
+                "name": "@parameters('$connections')['approvals']['connectionId']"
+              }
+            },
+            "method": "post",
+            "path": "/v2/approvals",
+            "body": {
+              "title": "Final Approval: @{triggerOutputs()?['body/Title']}",
+              "assignedTo": "@{outputs('Get_Department_Head')?['body/mail']}",
+              "details": "**Submitted by:** @{triggerOutputs()?['body/ApprovalSubmitter/DisplayName']}\n\n**Manager approved by:** @{outputs('Get_Manager')?['body/displayName']}\n\n**Document:** @{triggerOutputs()?['body/DocumentLink/Url']}\n\n**Priority:** @{triggerOutputs()?['body/ApprovalPriority/Value']}\n\nThis document has passed manager review. Please provide final approval.",
+              "itemLink": "@{triggerOutputs()?['body/DocumentLink/Url']}",
+              "itemLinkDescription": "Open Document",
+              "requestType": "Approve/Reject",
+              "responseOptions": ["Approve", "Reject"]
+            }
+          },
+          "runAfter": {
+            "Set_Stage_to_DeptHead": ["Succeeded"]
+          }
+        },
+        "Check_DeptHead_Response": {
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@outputs('Stage_2_Department_Head_Approval')?['body/outcome']",
+                  "Approve"
+                ]
+              }
+            ]
+          },
+          "runAfter": {
+            "Stage_2_Department_Head_Approval": ["Succeeded"]
+          },
+          "actions": {
+            "Update_Item_Approved": {
+              "type": "ApiConnection",
+              "inputs": {
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                  }
+                },
+                "method": "patch",
+                "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('approvalListId')))}/items/@{triggerOutputs()?['body/ID']}",
+                "body": {
+                  "ApprovalStatus": {
+                    "Value": "Approved"
+                  },
+                  "ReviewDate": "@{utcNow()}",
+                  "ApprovalReviewerId": "@{outputs('Get_Department_Head')?['body/id']}",
+                  "ApprovalComments": "Approved by @{outputs('Get_Manager')?['body/displayName']} (Manager) and @{outputs('Get_Department_Head')?['body/displayName']} (Department Head)"
+                }
+              }
+            },
+            "Send_Approval_Notification": {
+              "type": "ApiConnection",
+              "inputs": {
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['office365']['connectionId']"
+                  }
+                },
+                "method": "post",
+                "path": "/v2/Mail",
+                "body": {
+                  "To": "@{triggerOutputs()?['body/ApprovalSubmitter/Email']}",
+                  "Subject": "Document Approved: @{triggerOutputs()?['body/Title']}",
+                  "Body": "<h2>Your document has been approved</h2><p><strong>Document:</strong> @{triggerOutputs()?['body/Title']}</p><p><strong>Manager:</strong> @{outputs('Get_Manager')?['body/displayName']} - Approved</p><p><strong>Department Head:</strong> @{outputs('Get_Department_Head')?['body/displayName']} - Approved</p><p><a href=\"@{triggerOutputs()?['body/DocumentLink/Url']}\">View Document</a></p>",
+                  "Importance": "Normal"
+                }
+              },
+              "runAfter": {
+                "Update_Item_Approved": ["Succeeded"]
+              }
+            },
+            "Set_Outcome_Approved": {
+              "type": "SetVariable",
+              "inputs": {
+                "name": "ApprovalOutcome",
+                "value": "Approved"
+              },
+              "runAfter": {
+                "Send_Approval_Notification": ["Succeeded"]
+              }
+            }
+          },
+          "else": {
+            "actions": {
+              "Update_Item_Rejected_By_DeptHead": {
+                "type": "ApiConnection",
+                "inputs": {
+                  "host": {
+                    "connection": {
+                      "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                    }
+                  },
+                  "method": "patch",
+                  "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('approvalListId')))}/items/@{triggerOutputs()?['body/ID']}",
+                  "body": {
+                    "ApprovalStatus": {
+                      "Value": "Rejected"
+                    },
+                    "ReviewDate": "@{utcNow()}",
+                    "ApprovalComments": "Rejected by Department Head: @{outputs('Stage_2_Department_Head_Approval')?['body/responses'][0]['comments']}"
+                  }
+                }
+              },
+              "Send_DeptHead_Rejection_Email": {
+                "type": "ApiConnection",
+                "inputs": {
+                  "host": {
+                    "connection": {
+                      "name": "@parameters('$connections')['office365']['connectionId']"
+                    }
+                  },
+                  "method": "post",
+                  "path": "/v2/Mail",
+                  "body": {
+                    "To": "@{triggerOutputs()?['body/ApprovalSubmitter/Email']}",
+                    "Subject": "Document Rejected: @{triggerOutputs()?['body/Title']}",
+                    "Body": "<h2>Your document has been rejected</h2><p><strong>Document:</strong> @{triggerOutputs()?['body/Title']}</p><p><strong>Rejected by:</strong> @{outputs('Get_Department_Head')?['body/displayName']} (Department Head)</p><p><strong>Comments:</strong> @{outputs('Stage_2_Department_Head_Approval')?['body/responses'][0]['comments']}</p><p>Please revise and resubmit.</p>",
+                    "Importance": "High"
+                  }
+                },
+                "runAfter": {
+                  "Update_Item_Rejected_By_DeptHead": ["Succeeded"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "actions": {
+          "Update_Item_Rejected_By_Manager": {
+            "type": "ApiConnection",
+            "inputs": {
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                }
+              },
+              "method": "patch",
+              "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('approvalListId')))}/items/@{triggerOutputs()?['body/ID']}",
+              "body": {
+                "ApprovalStatus": {
+                  "Value": "Rejected"
+                },
+                "ReviewDate": "@{utcNow()}",
+                "ApprovalComments": "Rejected by Manager: @{outputs('Stage_1_Manager_Approval')?['body/responses'][0]['comments']}"
+              }
+            }
+          },
+          "Send_Manager_Rejection_Email": {
+            "type": "ApiConnection",
+            "inputs": {
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['office365']['connectionId']"
+                }
+              },
+              "method": "post",
+              "path": "/v2/Mail",
+              "body": {
+                "To": "@{triggerOutputs()?['body/ApprovalSubmitter/Email']}",
+                "Subject": "Document Rejected: @{triggerOutputs()?['body/Title']}",
+                "Body": "<h2>Your document has been rejected</h2><p><strong>Document:</strong> @{triggerOutputs()?['body/Title']}</p><p><strong>Rejected by:</strong> @{outputs('Get_Manager')?['body/displayName']} (Manager)</p><p><strong>Comments:</strong> @{outputs('Stage_1_Manager_Approval')?['body/responses'][0]['comments']}</p><p>Please revise and resubmit.</p>",
+                "Importance": "High"
+              }
+            },
+            "runAfter": {
+              "Update_Item_Rejected_By_Manager": ["Succeeded"]
+            }
+          }
+        }
+      }
+    },
+    "Escalation_Parallel": {
+      "type": "Scope",
+      "runAfter": {
+        "Get_Manager": ["Succeeded"]
+      },
+      "actions": {
+        "Delay_3_Days_Reminder": {
+          "type": "Wait",
+          "inputs": {
+            "interval": {
+              "count": "@parameters('escalationDaysReminder')",
+              "unit": "Day"
+            }
+          }
+        },
+        "Check_If_Still_Pending_Reminder": {
+          "type": "ApiConnection",
+          "inputs": {
+            "host": {
+              "connection": {
+                "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+              }
+            },
+            "method": "get",
+            "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('approvalListId')))}/items/@{triggerOutputs()?['body/ID']}"
+          },
+          "runAfter": {
+            "Delay_3_Days_Reminder": ["Succeeded"]
+          }
+        },
+        "Send_Reminder_If_Pending": {
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@outputs('Check_If_Still_Pending_Reminder')?['body/ApprovalStatus/Value']",
+                  "Pending"
+                ]
+              }
+            ]
+          },
+          "runAfter": {
+            "Check_If_Still_Pending_Reminder": ["Succeeded"]
+          },
+          "actions": {
+            "Send_Reminder_Email": {
+              "type": "ApiConnection",
+              "inputs": {
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['office365']['connectionId']"
+                  }
+                },
+                "method": "post",
+                "path": "/v2/Mail",
+                "body": {
+                  "To": "@{if(equals(variables('CurrentStage'), 'Manager'), outputs('Get_Manager')?['body/mail'], outputs('Get_Department_Head')?['body/mail'])}",
+                  "Subject": "REMINDER: Approval Pending - @{triggerOutputs()?['body/Title']}",
+                  "Body": "<h2>Approval Reminder</h2><p>You have a pending approval request that has been waiting for @{parameters('escalationDaysReminder')} days.</p><p><strong>Document:</strong> @{triggerOutputs()?['body/Title']}</p><p><strong>Submitted by:</strong> @{triggerOutputs()?['body/ApprovalSubmitter/DisplayName']}</p><p><strong>Priority:</strong> @{triggerOutputs()?['body/ApprovalPriority/Value']}</p><p>Please review at your earliest convenience. This request will be auto-escalated after @{parameters('escalationDaysAutoEscalate')} days.</p>",
+                  "Importance": "High"
+                }
+              }
+            }
+          }
+        },
+        "Delay_5_Days_Escalate": {
+          "type": "Wait",
+          "inputs": {
+            "interval": {
+              "count": "@parameters('escalationDaysAutoEscalate')",
+              "unit": "Day"
+            }
+          },
+          "runAfter": {
+            "Send_Reminder_If_Pending": ["Succeeded"]
+          }
+        },
+        "Check_If_Still_Pending_Escalate": {
+          "type": "ApiConnection",
+          "inputs": {
+            "host": {
+              "connection": {
+                "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+              }
+            },
+            "method": "get",
+            "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('approvalListId')))}/items/@{triggerOutputs()?['body/ID']}"
+          },
+          "runAfter": {
+            "Delay_5_Days_Escalate": ["Succeeded"]
+          }
+        },
+        "Auto_Escalate_If_Pending": {
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@outputs('Check_If_Still_Pending_Escalate')?['body/ApprovalStatus/Value']",
+                  "Pending"
+                ]
+              }
+            ]
+          },
+          "runAfter": {
+            "Check_If_Still_Pending_Escalate": ["Succeeded"]
+          },
+          "actions": {
+            "Send_Escalation_Email": {
+              "type": "ApiConnection",
+              "inputs": {
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['office365']['connectionId']"
+                  }
+                },
+                "method": "post",
+                "path": "/v2/Mail",
+                "body": {
+                  "To": "@{outputs('Get_Manager')?['body/mail']}",
+                  "Cc": "@{triggerOutputs()?['body/ApprovalSubmitter/Email']}",
+                  "Subject": "ESCALATION: Approval overdue - @{triggerOutputs()?['body/Title']}",
+                  "Body": "<h2>Auto-Escalation Notice</h2><p>The following approval request has exceeded the @{parameters('escalationDaysAutoEscalate')}-day response window and has been escalated.</p><p><strong>Document:</strong> @{triggerOutputs()?['body/Title']}</p><p><strong>Submitted by:</strong> @{triggerOutputs()?['body/ApprovalSubmitter/DisplayName']}</p><p><strong>Days pending:</strong> @{parameters('escalationDaysAutoEscalate')}</p><p>Immediate action is required.</p>",
+                  "Importance": "High"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

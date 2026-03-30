@@ -1,0 +1,326 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "name": "Cross-List Data Synchronization",
+    "description": "Synchronizes data between a hub list and spoke lists using a hub-wins conflict resolution strategy",
+    "category": "Data Sync",
+    "tags": ["sync", "cross-list", "hub-spoke", "audit"]
+  },
+  "parameters": {
+    "$connections": {
+      "defaultValue": {},
+      "type": "Object"
+    },
+    "siteUrl": {
+      "defaultValue": "https://contoso.sharepoint.com/sites/workflow-demo",
+      "type": "String"
+    },
+    "hubListId": {
+      "defaultValue": "",
+      "type": "String",
+      "metadata": {
+        "description": "GUID of the hub (source of truth) list"
+      }
+    },
+    "spokeListIds": {
+      "defaultValue": [],
+      "type": "Array",
+      "metadata": {
+        "description": "Array of spoke list GUIDs to sync to"
+      }
+    },
+    "auditListId": {
+      "defaultValue": "",
+      "type": "String",
+      "metadata": {
+        "description": "GUID of the sync audit log list"
+      }
+    },
+    "lookupFieldName": {
+      "defaultValue": "HubItemId",
+      "type": "String",
+      "metadata": {
+        "description": "Internal name of the lookup field on spoke lists that references the hub item"
+      }
+    },
+    "syncFields": {
+      "defaultValue": ["Title", "ProjectStatus", "ProjectPriority", "ProjectAssignedTo", "ProjectDueDate"],
+      "type": "Array",
+      "metadata": {
+        "description": "Field internal names to synchronize from hub to spoke lists"
+      }
+    }
+  },
+  "triggers": {
+    "When_hub_item_is_modified": {
+      "type": "ApiConnectionWebhook",
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+          }
+        },
+        "body": {
+          "NotificationUrl": "@{listCallbackUrl()}"
+        },
+        "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('hubListId')))}/onupdateditems"
+      }
+    }
+  },
+  "actions": {
+    "Initialize_SyncLog": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "SyncLog",
+            "type": "array",
+            "value": []
+          }
+        ]
+      },
+      "runAfter": {}
+    },
+    "Initialize_ErrorCount": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "ErrorCount",
+            "type": "integer",
+            "value": 0
+          }
+        ]
+      },
+      "runAfter": {}
+    },
+    "Initialize_SyncedCount": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "SyncedCount",
+            "type": "integer",
+            "value": 0
+          }
+        ]
+      },
+      "runAfter": {}
+    },
+    "Get_Hub_Item_Full_Details": {
+      "type": "ApiConnection",
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+          }
+        },
+        "method": "get",
+        "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('hubListId')))}/items/@{triggerOutputs()?['body/ID']}"
+      },
+      "runAfter": {
+        "Initialize_SyncLog": ["Succeeded"],
+        "Initialize_ErrorCount": ["Succeeded"],
+        "Initialize_SyncedCount": ["Succeeded"]
+      }
+    },
+    "Build_Update_Payload": {
+      "type": "Compose",
+      "inputs": {
+        "Title": "@{outputs('Get_Hub_Item_Full_Details')?['body/Title']}",
+        "ProjectStatus": "@{outputs('Get_Hub_Item_Full_Details')?['body/ProjectStatus/Value']}",
+        "ProjectPriority": "@{outputs('Get_Hub_Item_Full_Details')?['body/ProjectPriority/Value']}",
+        "ProjectAssignedToId": "@{outputs('Get_Hub_Item_Full_Details')?['body/ProjectAssignedTo/Claims']}",
+        "ProjectDueDate": "@{outputs('Get_Hub_Item_Full_Details')?['body/ProjectDueDate']}",
+        "_metadata": {
+          "hubItemId": "@{triggerOutputs()?['body/ID']}",
+          "hubModified": "@{triggerOutputs()?['body/Modified']}",
+          "syncTimestamp": "@{utcNow()}"
+        }
+      },
+      "runAfter": {
+        "Get_Hub_Item_Full_Details": ["Succeeded"]
+      }
+    },
+    "For_Each_Spoke_List": {
+      "type": "Foreach",
+      "foreach": "@parameters('spokeListIds')",
+      "actions": {
+        "Get_Matching_Spoke_Items": {
+          "type": "ApiConnection",
+          "inputs": {
+            "host": {
+              "connection": {
+                "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+              }
+            },
+            "method": "get",
+            "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(items('For_Each_Spoke_List')))}/items",
+            "queries": {
+              "$filter": "@{parameters('lookupFieldName')} eq @{triggerOutputs()?['body/ID']}"
+            }
+          }
+        },
+        "Check_Spoke_Items_Found": {
+          "type": "If",
+          "expression": {
+            "and": [
+              {
+                "greater": [
+                  "@length(outputs('Get_Matching_Spoke_Items')?['body/value'])",
+                  0
+                ]
+              }
+            ]
+          },
+          "runAfter": {
+            "Get_Matching_Spoke_Items": ["Succeeded"]
+          },
+          "actions": {
+            "For_Each_Spoke_Item": {
+              "type": "Foreach",
+              "foreach": "@outputs('Get_Matching_Spoke_Items')?['body/value']",
+              "actions": {
+                "Check_Conflict_Hub_Wins": {
+                  "type": "If",
+                  "expression": {
+                    "and": [
+                      {
+                        "greaterOrEquals": [
+                          "@triggerOutputs()?['body/Modified']",
+                          "@items('For_Each_Spoke_Item')?['Modified']"
+                        ]
+                      }
+                    ]
+                  },
+                  "actions": {
+                    "Update_Spoke_Item": {
+                      "type": "ApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connection": {
+                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                          }
+                        },
+                        "method": "patch",
+                        "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(items('For_Each_Spoke_List')))}/items/@{items('For_Each_Spoke_Item')?['ID']}",
+                        "body": {
+                          "Title": "@{outputs('Get_Hub_Item_Full_Details')?['body/Title']}",
+                          "ProjectStatus": {
+                            "Value": "@{outputs('Get_Hub_Item_Full_Details')?['body/ProjectStatus/Value']}"
+                          },
+                          "ProjectPriority": {
+                            "Value": "@{outputs('Get_Hub_Item_Full_Details')?['body/ProjectPriority/Value']}"
+                          },
+                          "ProjectDueDate": "@{outputs('Get_Hub_Item_Full_Details')?['body/ProjectDueDate']}"
+                        }
+                      }
+                    },
+                    "Increment_SyncedCount": {
+                      "type": "IncrementVariable",
+                      "inputs": {
+                        "name": "SyncedCount",
+                        "value": 1
+                      },
+                      "runAfter": {
+                        "Update_Spoke_Item": ["Succeeded"]
+                      }
+                    },
+                    "Log_Successful_Sync": {
+                      "type": "AppendToArrayVariable",
+                      "inputs": {
+                        "name": "SyncLog",
+                        "value": {
+                          "action": "Updated",
+                          "spokeListId": "@{items('For_Each_Spoke_List')}",
+                          "spokeItemId": "@{items('For_Each_Spoke_Item')?['ID']}",
+                          "hubItemId": "@{triggerOutputs()?['body/ID']}",
+                          "timestamp": "@{utcNow()}",
+                          "status": "Success"
+                        }
+                      },
+                      "runAfter": {
+                        "Increment_SyncedCount": ["Succeeded"]
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Log_Conflict_Skipped": {
+                        "type": "AppendToArrayVariable",
+                        "inputs": {
+                          "name": "SyncLog",
+                          "value": {
+                            "action": "Skipped (conflict - spoke newer)",
+                            "spokeListId": "@{items('For_Each_Spoke_List')}",
+                            "spokeItemId": "@{items('For_Each_Spoke_Item')?['ID']}",
+                            "hubItemId": "@{triggerOutputs()?['body/ID']}",
+                            "hubModified": "@{triggerOutputs()?['body/Modified']}",
+                            "spokeModified": "@{items('For_Each_Spoke_Item')?['Modified']}",
+                            "timestamp": "@{utcNow()}",
+                            "status": "Conflict"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "actions": {
+              "Log_No_Matching_Items": {
+                "type": "AppendToArrayVariable",
+                "inputs": {
+                  "name": "SyncLog",
+                  "value": {
+                    "action": "No matching items found",
+                    "spokeListId": "@{items('For_Each_Spoke_List')}",
+                    "hubItemId": "@{triggerOutputs()?['body/ID']}",
+                    "timestamp": "@{utcNow()}",
+                    "status": "Info"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "runAfter": {
+        "Build_Update_Payload": ["Succeeded"]
+      },
+      "runtimeConfiguration": {
+        "concurrency": {
+          "repetitions": 1
+        }
+      }
+    },
+    "Write_Audit_Log_Entry": {
+      "type": "ApiConnection",
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+          }
+        },
+        "method": "post",
+        "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('auditListId')))}/items",
+        "body": {
+          "Title": "Sync: Hub Item @{triggerOutputs()?['body/ID']} - @{triggerOutputs()?['body/Title']}",
+          "SyncTimestamp": "@{utcNow()}",
+          "HubItemId": "@{triggerOutputs()?['body/ID']}",
+          "SpokeListCount": "@{length(parameters('spokeListIds'))}",
+          "ItemsSynced": "@{variables('SyncedCount')}",
+          "Errors": "@{variables('ErrorCount')}",
+          "SyncDetails": "@{string(variables('SyncLog'))}",
+          "Status": "@{if(greater(variables('ErrorCount'), 0), 'Completed with errors', 'Success')}"
+        }
+      },
+      "runAfter": {
+        "For_Each_Spoke_List": ["Succeeded", "Failed"]
+      }
+    }
+  }
+}

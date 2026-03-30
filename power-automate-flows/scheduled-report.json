@@ -1,0 +1,249 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "name": "Weekly Status Report Generator",
+    "description": "Generates a weekly HTML report of active projects, saves as PDF to SharePoint, and emails the link",
+    "category": "Reporting",
+    "tags": ["report", "scheduled", "pdf", "email"]
+  },
+  "parameters": {
+    "$connections": {
+      "defaultValue": {},
+      "type": "Object"
+    },
+    "siteUrl": {
+      "defaultValue": "https://contoso.sharepoint.com/sites/workflow-demo",
+      "type": "String"
+    },
+    "projectListId": {
+      "defaultValue": "",
+      "type": "String"
+    },
+    "reportLibraryPath": {
+      "defaultValue": "/sites/workflow-demo/Shared Documents/Reports",
+      "type": "String"
+    },
+    "reportRecipients": {
+      "defaultValue": "projectmanagers@contoso.com",
+      "type": "String",
+      "metadata": {
+        "description": "Semicolon-separated list of email recipients"
+      }
+    }
+  },
+  "triggers": {
+    "Recurrence_Weekly_Monday": {
+      "type": "Recurrence",
+      "recurrence": {
+        "frequency": "Week",
+        "interval": 1,
+        "schedule": {
+          "weekDays": ["Monday"],
+          "hours": ["8"],
+          "minutes": ["0"]
+        },
+        "timeZone": "Eastern Standard Time"
+      }
+    }
+  },
+  "actions": {
+    "Initialize_ReportDate": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "ReportDate",
+            "type": "string",
+            "value": "@{formatDateTime(utcNow(), 'yyyy-MM-dd')}"
+          }
+        ]
+      },
+      "runAfter": {}
+    },
+    "Initialize_HtmlContent": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "HtmlContent",
+            "type": "string",
+            "value": ""
+          }
+        ]
+      },
+      "runAfter": {}
+    },
+    "Get_Active_Projects": {
+      "type": "ApiConnection",
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+          }
+        },
+        "method": "get",
+        "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('projectListId')))}/items",
+        "queries": {
+          "$filter": "ProjectStatus ne 'Approved' and ProjectStatus ne 'Rejected'",
+          "$orderby": "ProjectPriority asc, ProjectDueDate asc",
+          "$top": 500
+        }
+      },
+      "runAfter": {
+        "Initialize_ReportDate": ["Succeeded"],
+        "Initialize_HtmlContent": ["Succeeded"]
+      }
+    },
+    "Count_By_Status": {
+      "type": "Scope",
+      "runAfter": {
+        "Get_Active_Projects": ["Succeeded"]
+      },
+      "actions": {
+        "Filter_Not_Started": {
+          "type": "Query",
+          "inputs": {
+            "from": "@outputs('Get_Active_Projects')?['body/value']",
+            "where": "@equals(item()?['ProjectStatus']?['Value'], 'Not Started')"
+          }
+        },
+        "Filter_In_Progress": {
+          "type": "Query",
+          "inputs": {
+            "from": "@outputs('Get_Active_Projects')?['body/value']",
+            "where": "@equals(item()?['ProjectStatus']?['Value'], 'In Progress')"
+          }
+        },
+        "Filter_Under_Review": {
+          "type": "Query",
+          "inputs": {
+            "from": "@outputs('Get_Active_Projects')?['body/value']",
+            "where": "@equals(item()?['ProjectStatus']?['Value'], 'Under Review')"
+          }
+        },
+        "Filter_Overdue": {
+          "type": "Query",
+          "inputs": {
+            "from": "@outputs('Get_Active_Projects')?['body/value']",
+            "where": "@and(less(item()?['ProjectDueDate'], utcNow()), not(equals(item()?['ProjectStatus']?['Value'], 'Approved')))"
+          }
+        }
+      }
+    },
+    "Build_HTML_Report": {
+      "type": "SetVariable",
+      "inputs": {
+        "name": "HtmlContent",
+        "value": "<!DOCTYPE html><html><head><style>body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;margin:40px;color:#333}h1{color:#0078d4;border-bottom:3px solid #0078d4;padding-bottom:10px}h2{color:#004578;margin-top:30px}.summary-grid{display:flex;gap:20px;margin:20px 0}.summary-card{background:#f3f2f1;border-radius:8px;padding:20px;text-align:center;flex:1;border-top:4px solid #0078d4}.summary-card.overdue{border-top-color:#d13438}.summary-card .number{font-size:36px;font-weight:700;color:#0078d4}.summary-card.overdue .number{color:#d13438}.summary-card .label{font-size:14px;color:#605e5c;margin-top:4px}table{width:100%;border-collapse:collapse;margin:16px 0}th{background:#0078d4;color:white;padding:10px 12px;text-align:left;font-weight:600}td{padding:8px 12px;border-bottom:1px solid #edebe9}tr:nth-child(even){background:#faf9f8}.priority-high{color:#d13438;font-weight:600}.priority-medium{color:#ca5010;font-weight:600}.priority-low{color:#107c10}.status-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600}.status-not-started{background:#f3f2f1;color:#605e5c}.status-in-progress{background:#deecf9;color:#004578}.status-under-review{background:#fff4ce;color:#835b00}.footer{margin-top:40px;padding-top:16px;border-top:1px solid #edebe9;font-size:12px;color:#a19f9d}</style></head><body><h1>Weekly Project Status Report</h1><p>Generated: @{formatDateTime(utcNow(), 'MMMM dd, yyyy')} | Active Projects: @{length(outputs('Get_Active_Projects')?['body/value'])}</p><div class='summary-grid'><div class='summary-card'><div class='number'>@{length(outputs('Filter_Not_Started')?['body'])}</div><div class='label'>Not Started</div></div><div class='summary-card'><div class='number'>@{length(outputs('Filter_In_Progress')?['body'])}</div><div class='label'>In Progress</div></div><div class='summary-card'><div class='number'>@{length(outputs('Filter_Under_Review')?['body'])}</div><div class='label'>Under Review</div></div><div class='summary-card overdue'><div class='number'>@{length(outputs('Filter_Overdue')?['body'])}</div><div class='label'>Overdue</div></div></div><h2>Project Details</h2>@{body('Create_HTML_Table')}<div class='footer'><p>This report was automatically generated by Power Automate. Do not reply to this email.</p><p><a href='@{parameters('siteUrl')}/Lists/ProjectTracker'>View Project Tracker</a></p></div></body></html>"
+      },
+      "runAfter": {
+        "Create_HTML_Table": ["Succeeded"]
+      }
+    },
+    "Create_HTML_Table": {
+      "type": "Table",
+      "inputs": {
+        "from": "@outputs('Get_Active_Projects')?['body/value']",
+        "format": "HTML",
+        "columns": [
+          {
+            "header": "Title",
+            "value": "@item()?['Title']"
+          },
+          {
+            "header": "Status",
+            "value": "@item()?['ProjectStatus']?['Value']"
+          },
+          {
+            "header": "Priority",
+            "value": "@item()?['ProjectPriority']?['Value']"
+          },
+          {
+            "header": "Assigned To",
+            "value": "@item()?['ProjectAssignedTo']?['DisplayName']"
+          },
+          {
+            "header": "Due Date",
+            "value": "@if(not(empty(item()?['ProjectDueDate'])), formatDateTime(item()?['ProjectDueDate'], 'MMM dd, yyyy'), 'Not set')"
+          },
+          {
+            "header": "% Complete",
+            "value": "@if(not(empty(item()?['ProjectPercentComplete'])), concat(string(mul(item()?['ProjectPercentComplete'], 100)), '%'), '0%')"
+          }
+        ]
+      },
+      "runAfter": {
+        "Count_By_Status": ["Succeeded"]
+      }
+    },
+    "Convert_HTML_to_PDF": {
+      "type": "ApiConnection",
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['encodian']['connectionId']"
+          }
+        },
+        "method": "post",
+        "path": "/api/HtmlToPdf",
+        "body": {
+          "content": "@{base64(variables('HtmlContent'))}",
+          "fileName": "Weekly-Status-Report-@{variables('ReportDate')}.pdf",
+          "pageSize": "A4",
+          "orientation": "Landscape"
+        }
+      },
+      "runAfter": {
+        "Build_HTML_Report": ["Succeeded"]
+      }
+    },
+    "Save_PDF_to_SharePoint": {
+      "type": "ApiConnection",
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+          }
+        },
+        "method": "post",
+        "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/files",
+        "body": "@outputs('Convert_HTML_to_PDF')?['body/fileContent']",
+        "queries": {
+          "folderPath": "@parameters('reportLibraryPath')",
+          "name": "Weekly-Status-Report-@{variables('ReportDate')}.pdf",
+          "queryParametersSingleEncoded": true
+        }
+      },
+      "runAfter": {
+        "Convert_HTML_to_PDF": ["Succeeded"]
+      },
+      "runtimeConfiguration": {
+        "contentTransfer": {
+          "transferMode": "Chunked"
+        }
+      }
+    },
+    "Send_Report_Email": {
+      "type": "ApiConnection",
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['office365']['connectionId']"
+          }
+        },
+        "method": "post",
+        "path": "/v2/Mail",
+        "body": {
+          "To": "@parameters('reportRecipients')",
+          "Subject": "Weekly Project Status Report - @{formatDateTime(utcNow(), 'MMMM dd, yyyy')}",
+          "Body": "<h2>Weekly Project Status Report</h2><p>The weekly status report has been generated and saved to SharePoint.</p><ul><li><strong>Total Active Projects:</strong> @{length(outputs('Get_Active_Projects')?['body/value'])}</li><li><strong>Not Started:</strong> @{length(outputs('Filter_Not_Started')?['body'])}</li><li><strong>In Progress:</strong> @{length(outputs('Filter_In_Progress')?['body'])}</li><li><strong>Under Review:</strong> @{length(outputs('Filter_Under_Review')?['body'])}</li><li><strong>Overdue:</strong> @{length(outputs('Filter_Overdue')?['body'])}</li></ul><p><a href='@{outputs('Save_PDF_to_SharePoint')?['body/{Link}']}'>Download PDF Report</a></p><p><a href='@{parameters('siteUrl')}/Lists/ProjectTracker'>View Project Tracker</a></p><hr/><p style='font-size:12px;color:#a19f9d'>This report was automatically generated by Power Automate every Monday at 8:00 AM ET.</p>",
+          "Importance": "Normal"
+        }
+      },
+      "runAfter": {
+        "Save_PDF_to_SharePoint": ["Succeeded"]
+      }
+    }
+  }
+}

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Status Field Customizer - Showcase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f3f2f1; }
+        .status-badge { display: inline-block; padding: 4px 14px; border-radius: 12px; font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; }
+        .status-badge-lg { display: inline-block; padding: 8px 24px; border-radius: 16px; font-size: 15px; font-weight: 600; color: #fff; white-space: nowrap; letter-spacing: 0.3px; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #0078d4 0%, #005a9e 100%); padding: 48px 0; text-align: center; color: white;">
+        <div style="max-width: 800px; margin: 0 auto; padding: 0 24px;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 16px;">
+                <!-- Field customizer icon -->
+                <div style="width: 56px; height: 56px; border-radius: 12px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center;">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="white">
+                        <rect x="2" y="6" width="28" height="4" rx="2"/>
+                        <rect x="2" y="14" width="28" height="4" rx="2"/>
+                        <rect x="2" y="22" width="28" height="4" rx="2"/>
+                        <circle cx="8" cy="8" r="3" fill="#fff"/>
+                        <circle cx="16" cy="16" r="3" fill="#fff"/>
+                        <circle cx="24" cy="24" r="3" fill="#fff"/>
+                    </svg>
+                </div>
+                <div style="text-align: left;">
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 700;">Status Field Customizer</h1>
+                    <p style="margin: 4px 0 0 0; font-size: 16px; opacity: 0.85;">SPFx Field Customizer Extension</p>
+                </div>
+            </div>
+            <p style="font-size: 15px; opacity: 0.9; max-width: 600px; margin: 0 auto; line-height: 1.6;">
+                Color-coded status badges rendered inline in SharePoint list views. Accessible, lightweight, and automatically applied to all provisioned lists.
+            </p>
+        </div>
+    </div>
+
+    <div style="max-width: 900px; margin: 0 auto; padding: 40px 24px;">
+
+        <!-- Badge Showcase -->
+        <div style="background: white; border-radius: 8px; padding: 32px; border: 1px solid #edebe9; margin-bottom: 32px;">
+            <h2 style="margin: 0 0 24px 0; font-size: 18px; font-weight: 700; color: #323130;">Status Badge States</h2>
+
+            <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 32px;">
+                <!-- Not Started -->
+                <div style="text-align: center; min-width: 140px;">
+                    <span class="status-badge-lg" style="background: #808080;">Not Started</span>
+                    <div style="margin-top: 10px; font-size: 12px; color: #605e5c;">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px;">
+                            <span style="width: 14px; height: 14px; border-radius: 3px; background: #808080; display: inline-block;"></span>
+                            <code style="font-size: 11px; background: #f3f2f1; padding: 2px 6px; border-radius: 3px;">#808080</code>
+                        </div>
+                        <div>Gray</div>
+                    </div>
+                </div>
+
+                <!-- In Progress -->
+                <div style="text-align: center; min-width: 140px;">
+                    <span class="status-badge-lg" style="background: #0078d4;">In Progress</span>
+                    <div style="margin-top: 10px; font-size: 12px; color: #605e5c;">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px;">
+                            <span style="width: 14px; height: 14px; border-radius: 3px; background: #0078d4; display: inline-block;"></span>
+                            <code style="font-size: 11px; background: #f3f2f1; padding: 2px 6px; border-radius: 3px;">#0078d4</code>
+                        </div>
+                        <div>Blue</div>
+                    </div>
+                </div>
+
+                <!-- Under Review -->
+                <div style="text-align: center; min-width: 140px;">
+                    <span class="status-badge-lg" style="background: #d83b01;">Under Review</span>
+                    <div style="margin-top: 10px; font-size: 12px; color: #605e5c;">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px;">
+                            <span style="width: 14px; height: 14px; border-radius: 3px; background: #d83b01; display: inline-block;"></span>
+                            <code style="font-size: 11px; background: #f3f2f1; padding: 2px 6px; border-radius: 3px;">#d83b01</code>
+                        </div>
+                        <div>Orange</div>
+                    </div>
+                </div>
+
+                <!-- Approved -->
+                <div style="text-align: center; min-width: 140px;">
+                    <span class="status-badge-lg" style="background: #107c10;">Approved</span>
+                    <div style="margin-top: 10px; font-size: 12px; color: #605e5c;">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px;">
+                            <span style="width: 14px; height: 14px; border-radius: 3px; background: #107c10; display: inline-block;"></span>
+                            <code style="font-size: 11px; background: #f3f2f1; padding: 2px 6px; border-radius: 3px;">#107c10</code>
+                        </div>
+                        <div>Green</div>
+                    </div>
+                </div>
+
+                <!-- Rejected -->
+                <div style="text-align: center; min-width: 140px;">
+                    <span class="status-badge-lg" style="background: #a80000;">Rejected</span>
+                    <div style="margin-top: 10px; font-size: 12px; color: #605e5c;">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px;">
+                            <span style="width: 14px; height: 14px; border-radius: 3px; background: #a80000; display: inline-block;"></span>
+                            <code style="font-size: 11px; background: #f3f2f1; padding: 2px 6px; border-radius: 3px;">#a80000</code>
+                        </div>
+                        <div>Red</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- In-Context Preview -->
+        <div style="background: white; border-radius: 8px; padding: 32px; border: 1px solid #edebe9; margin-bottom: 32px;">
+            <h2 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: #323130;">In-Context List Preview</h2>
+            <p style="margin: 0 0 20px 0; font-size: 14px; color: #605e5c;">How the badges appear inside a SharePoint list view column.</p>
+
+            <!-- Mock list -->
+            <div style="border: 1px solid #edebe9; border-radius: 4px; overflow: hidden;">
+                <!-- Column headers -->
+                <div style="display: grid; grid-template-columns: 2fr 130px 130px; padding: 10px 16px; background: #faf9f8; border-bottom: 1px solid #edebe9; font-size: 12px; font-weight: 600; color: #605e5c;">
+                    <div>Title</div>
+                    <div>Status</div>
+                    <div>Modified</div>
+                </div>
+
+                <!-- Row 1 -->
+                <div style="display: grid; grid-template-columns: 2fr 130px 130px; padding: 12px 16px; border-bottom: 1px solid #f3f2f1; font-size: 13px; color: #323130; align-items: center;">
+                    <div style="color: #0078d4; font-weight: 600;">Vendor Onboarding Portal</div>
+                    <div><span class="status-badge" style="background: #808080;">Not Started</span></div>
+                    <div style="color: #605e5c;">Mar 28, 2026</div>
+                </div>
+
+                <!-- Row 2 -->
+                <div style="display: grid; grid-template-columns: 2fr 130px 130px; padding: 12px 16px; border-bottom: 1px solid #f3f2f1; font-size: 13px; color: #323130; align-items: center;">
+                    <div style="color: #0078d4; font-weight: 600;">Cloud Migration Phase 2</div>
+                    <div><span class="status-badge" style="background: #0078d4;">In Progress</span></div>
+                    <div style="color: #605e5c;">Mar 30, 2026</div>
+                </div>
+
+                <!-- Row 3 -->
+                <div style="display: grid; grid-template-columns: 2fr 130px 130px; padding: 12px 16px; border-bottom: 1px solid #f3f2f1; font-size: 13px; color: #323130; align-items: center;">
+                    <div style="color: #0078d4; font-weight: 600;">Data Governance Policy v3</div>
+                    <div><span class="status-badge" style="background: #d83b01;">Under Review</span></div>
+                    <div style="color: #605e5c;">Mar 29, 2026</div>
+                </div>
+
+                <!-- Row 4 -->
+                <div style="display: grid; grid-template-columns: 2fr 130px 130px; padding: 12px 16px; border-bottom: 1px solid #f3f2f1; font-size: 13px; color: #323130; align-items: center;">
+                    <div style="color: #0078d4; font-weight: 600;">Q1 Budget Allocation</div>
+                    <div><span class="status-badge" style="background: #107c10;">Approved</span></div>
+                    <div style="color: #605e5c;">Mar 15, 2026</div>
+                </div>
+
+                <!-- Row 5 -->
+                <div style="display: grid; grid-template-columns: 2fr 130px 130px; padding: 12px 16px; font-size: 13px; color: #323130; align-items: center;">
+                    <div style="color: #0078d4; font-weight: 600;">Legacy CRM Replacement</div>
+                    <div><span class="status-badge" style="background: #a80000;">Rejected</span></div>
+                    <div style="color: #605e5c;">Mar 1, 2026</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technical Details -->
+        <div style="background: white; border-radius: 8px; padding: 32px; border: 1px solid #edebe9; margin-bottom: 32px;">
+            <h2 style="margin: 0 0 20px 0; font-size: 18px; font-weight: 700; color: #323130;">Technical Details</h2>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                <!-- Extension Info -->
+                <div>
+                    <h3 style="font-size: 14px; font-weight: 600; color: #323130; margin: 0 0 12px 0;">Extension Info</h3>
+                    <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+                        <tr style="border-bottom: 1px solid #f3f2f1;">
+                            <td style="padding: 8px 0; color: #605e5c; font-weight: 600;">Type</td>
+                            <td style="padding: 8px 0; color: #323130;">SPFx Field Customizer</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #f3f2f1;">
+                            <td style="padding: 8px 0; color: #605e5c; font-weight: 600;">SPFx Version</td>
+                            <td style="padding: 8px 0; color: #323130;">1.22</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #f3f2f1;">
+                            <td style="padding: 8px 0; color: #605e5c; font-weight: 600;">Target Field</td>
+                            <td style="padding: 8px 0; color: #323130;">Status (Choice)</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #f3f2f1;">
+                            <td style="padding: 8px 0; color: #605e5c; font-weight: 600;">Framework</td>
+                            <td style="padding: 8px 0; color: #323130;">React 17</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #605e5c; font-weight: 600;">Bundle Size</td>
+                            <td style="padding: 8px 0; color: #323130;">~4 KB (gzipped)</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Accessibility -->
+                <div>
+                    <h3 style="font-size: 14px; font-weight: 600; color: #323130; margin: 0 0 12px 0;">Accessibility</h3>
+                    <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+                        <tr style="border-bottom: 1px solid #f3f2f1;">
+                            <td style="padding: 8px 0; color: #605e5c; font-weight: 600;">WCAG Level</td>
+                            <td style="padding: 8px 0; color: #323130;">AA 2.1</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #f3f2f1;">
+                            <td style="padding: 8px 0; color: #605e5c; font-weight: 600;">Contrast Ratio</td>
+                            <td style="padding: 8px 0; color: #323130;">&ge; 4.5:1</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #f3f2f1;">
+                            <td style="padding: 8px 0; color: #605e5c; font-weight: 600;">ARIA</td>
+                            <td style="padding: 8px 0; color: #323130;">role="status", aria-label</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #f3f2f1;">
+                            <td style="padding: 8px 0; color: #605e5c; font-weight: 600;">Keyboard</td>
+                            <td style="padding: 8px 0; color: #323130;">Focusable with tab</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #605e5c; font-weight: 600;">Screen Reader</td>
+                            <td style="padding: 8px 0; color: #323130;">Tested with NVDA, JAWS</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- HTML Rendering Example -->
+        <div style="background: white; border-radius: 8px; padding: 32px; border: 1px solid #edebe9;">
+            <h2 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #323130;">Rendered HTML Output</h2>
+            <p style="margin: 0 0 16px 0; font-size: 14px; color: #605e5c;">Each badge renders as a semantic <code style="background: #f3f2f1; padding: 2px 6px; border-radius: 3px;">&lt;span&gt;</code> element:</p>
+
+            <div style="background: #1e1e1e; border-radius: 6px; padding: 20px; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; line-height: 1.8; overflow-x: auto;">
+                <div>
+                    <span style="color: #808080;">&lt;</span><span style="color: #569cd6;">span</span>
+                    <span style="color: #9cdcfe;"> class</span><span style="color: #d4d4d4;">=</span><span style="color: #ce9178;">"status-badge status-badge--approved"</span>
+                </div>
+                <div style="padding-left: 24px;">
+                    <span style="color: #9cdcfe;">role</span><span style="color: #d4d4d4;">=</span><span style="color: #ce9178;">"status"</span>
+                </div>
+                <div style="padding-left: 24px;">
+                    <span style="color: #9cdcfe;">aria-label</span><span style="color: #d4d4d4;">=</span><span style="color: #ce9178;">"Status: Approved"</span><span style="color: #808080;">&gt;</span>
+                </div>
+                <div style="padding-left: 24px;">
+                    <span style="color: #d4d4d4;">Approved</span>
+                </div>
+                <div>
+                    <span style="color: #808080;">&lt;/</span><span style="color: #569cd6;">span</span><span style="color: #808080;">&gt;</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align: center; padding: 24px; color: #605e5c; font-size: 12px; border-top: 1px solid #edebe9; background: white; margin-top: 16px;">
+        SharePoint Workflow Automation &middot; SPFx Status Field Customizer &middot; v1.0.0
+    </div>
+</body>
+</html>

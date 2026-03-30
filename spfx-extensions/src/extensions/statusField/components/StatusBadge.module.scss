@@ -1,0 +1,90 @@
+@import '~@fluentui/react/dist/sass/References';
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+  white-space: nowrap;
+  user-select: none;
+
+  .icon {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10px;
+  }
+
+  .label {
+    display: inline-block;
+  }
+
+  // Gray — Not Started
+  &.notStarted {
+    background-color: #f3f2f1;
+    color: #605e5c;
+    border: 1px solid #d2d0ce;
+
+    .icon {
+      color: #a19f9d;
+    }
+  }
+
+  // Blue — In Progress
+  &.inProgress {
+    background-color: #deecf9;
+    color: #004578;
+    border: 1px solid #b3d7f2;
+
+    .icon {
+      color: #0078d4;
+    }
+  }
+
+  // Orange — Under Review
+  &.underReview {
+    background-color: #fff4ce;
+    color: #835b00;
+    border: 1px solid #ffe8a3;
+
+    .icon {
+      color: #d48c00;
+    }
+  }
+
+  // Green — Approved
+  &.approved {
+    background-color: #dff6dd;
+    color: #0b6a0b;
+    border: 1px solid #b7e1b5;
+
+    .icon {
+      color: #107c10;
+    }
+  }
+
+  // Red — Rejected
+  &.rejected {
+    background-color: #fde7e9;
+    color: #a4262c;
+    border: 1px solid #f5c1c4;
+
+    .icon {
+      color: #d13438;
+    }
+  }
+
+  // Default fallback
+  &.default {
+    background-color: #edebe9;
+    color: #323130;
+    border: 1px solid #d2d0ce;
+
+    .icon {
+      color: #605e5c;
+    }
+  }
+}

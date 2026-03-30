@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<pnp:Provisioning xmlns:pnp="http://schemas.dev.office.com/PnP/2023/01/ProvisioningSchema">
+  <pnp:Preferences Generator="PnP" />
+  <pnp:Templates ID="CONTAINER-TEMPLATE-EMPLOYEE-ONBOARDING">
+    <pnp:ProvisioningTemplate ID="TEMPLATE-EMPLOYEE-ONBOARDING" Version="1" BaseSiteTemplate="STS#3">
+
+      <pnp:SiteFields>
+        <Field ID="{1A2B3C4D-5E6F-4A7B-8C9D-0E1F2A3B4C5D}"
+               Name="OBDescription"
+               DisplayName="Description"
+               Type="Note"
+               RichText="TRUE"
+               NumLines="4"
+               Group="Workflow Automation" />
+
+        <Field ID="{2B3C4D5E-6F7A-4B8C-9D0E-1F2A3B4C5D6E}"
+               Name="OBAssignedDepartment"
+               DisplayName="Assigned Department"
+               Type="Choice"
+               Group="Workflow Automation">
+          <CHOICES>
+            <CHOICE>IT</CHOICE>
+            <CHOICE>HR</CHOICE>
+            <CHOICE>Facilities</CHOICE>
+            <CHOICE>Security</CHOICE>
+            <CHOICE>Manager</CHOICE>
+          </CHOICES>
+        </Field>
+
+        <Field ID="{3C4D5E6F-7A8B-4C9D-0E1F-2A3B4C5D6E7F}"
+               Name="OBDueWithinDays"
+               DisplayName="Due Within Days"
+               Type="Number"
+               Min="0"
+               Max="365"
+               Group="Workflow Automation" />
+
+        <Field ID="{4D5E6F7A-8B9C-4D0E-1F2A-3B4C5D6E7F8A}"
+               Name="OBStatus"
+               DisplayName="Status"
+               Type="Choice"
+               Group="Workflow Automation">
+          <CHOICES>
+            <CHOICE>Not Started</CHOICE>
+            <CHOICE>In Progress</CHOICE>
+            <CHOICE>Completed</CHOICE>
+            <CHOICE>Blocked</CHOICE>
+          </CHOICES>
+          <Default>Not Started</Default>
+        </Field>
+
+        <Field ID="{5E6F7A8B-9C0D-4E1F-2A3B-4C5D6E7F8A9B}"
+               Name="OBNewHireName"
+               DisplayName="New Hire"
+               Type="User"
+               UserSelectionMode="PeopleOnly"
+               Group="Workflow Automation" />
+
+        <Field ID="{6F7A8B9C-0D1E-4F2A-3B4C-5D6E7F8A9B0C}"
+               Name="OBStartDate"
+               DisplayName="Start Date"
+               Type="DateTime"
+               Format="DateOnly"
+               Group="Workflow Automation" />
+
+        <Field ID="{7A8B9C0D-1E2F-4A3B-4C5D-6E7F8A9B0C1D}"
+               Name="OBCompletedDate"
+               DisplayName="Completed Date"
+               Type="DateTime"
+               Format="DateOnly"
+               Group="Workflow Automation" />
+
+        <Field ID="{8B9C0D1E-2F3A-4B4C-5D6E-7F8A9B0C1D2E}"
+               Name="OBNotes"
+               DisplayName="Notes"
+               Type="Note"
+               RichText="TRUE"
+               NumLines="4"
+               Group="Workflow Automation" />
+      </pnp:SiteFields>
+
+      <pnp:ContentTypes>
+        <pnp:ContentType ID="0x01007D1E0F2A3B4C5D6E7F8A9B0C1D2E"
+                         Name="OnboardingTask"
+                         Description="Content type for employee onboarding checklist tasks"
+                         Group="Workflow Automation">
+          <pnp:FieldRefs>
+            <pnp:FieldRef ID="{fa564e0f-0c70-4ab9-b863-0177e6ddd247}" Name="Title" Required="true" DisplayName="Task Name" />
+            <pnp:FieldRef ID="{1A2B3C4D-5E6F-4A7B-8C9D-0E1F2A3B4C5D}" Name="OBDescription" />
+            <pnp:FieldRef ID="{2B3C4D5E-6F7A-4B8C-9D0E-1F2A3B4C5D6E}" Name="OBAssignedDepartment" Required="true" />
+            <pnp:FieldRef ID="{3C4D5E6F-7A8B-4C9D-0E1F-2A3B4C5D6E7F}" Name="OBDueWithinDays" Required="true" />
+            <pnp:FieldRef ID="{4D5E6F7A-8B9C-4D0E-1F2A-3B4C5D6E7F8A}" Name="OBStatus" Required="true" />
+            <pnp:FieldRef ID="{5E6F7A8B-9C0D-4E1F-2A3B-4C5D6E7F8A9B}" Name="OBNewHireName" Required="true" />
+            <pnp:FieldRef ID="{6F7A8B9C-0D1E-4F2A-3B4C-5D6E7F8A9B0C}" Name="OBStartDate" Required="true" />
+            <pnp:FieldRef ID="{7A8B9C0D-1E2F-4A3B-4C5D-6E7F8A9B0C1D}" Name="OBCompletedDate" />
+            <pnp:FieldRef ID="{8B9C0D1E-2F3A-4B4C-5D6E-7F8A9B0C1D2E}" Name="OBNotes" />
+          </pnp:FieldRefs>
+        </pnp:ContentType>
+      </pnp:ContentTypes>
+
+      <pnp:Lists>
+        <pnp:ListInstance Title="Employee Onboarding Checklist"
+                          Description="Manages onboarding tasks for new employees across departments"
+                          TemplateType="100"
+                          Url="Lists/EmployeeOnboarding"
+                          EnableVersioning="true"
+                          EnableMinorVersions="false"
+                          ContentTypesEnabled="true">
+
+          <pnp:ContentTypeBindings>
+            <pnp:ContentTypeBinding ContentTypeID="0x01007D1E0F2A3B4C5D6E7F8A9B0C1D2E" Default="true" />
+          </pnp:ContentTypeBindings>
+
+          <pnp:Views>
+            <View DisplayName="All Tasks" DefaultView="TRUE" MobileDefaultView="TRUE" BaseViewID="1" Type="HTML">
+              <ViewFields>
+                <FieldRef Name="LinkTitle" />
+                <FieldRef Name="OBAssignedDepartment" />
+                <FieldRef Name="OBStatus" />
+                <FieldRef Name="OBNewHireName" />
+                <FieldRef Name="OBStartDate" />
+                <FieldRef Name="OBDueWithinDays" />
+              </ViewFields>
+              <Query>
+                <OrderBy>
+                  <FieldRef Name="OBStartDate" Ascending="FALSE" />
+                  <FieldRef Name="OBDueWithinDays" />
+                </OrderBy>
+              </Query>
+              <RowLimit Paged="TRUE">30</RowLimit>
+            </View>
+
+            <View DisplayName="By Department" BaseViewID="2" Type="HTML">
+              <ViewFields>
+                <FieldRef Name="LinkTitle" />
+                <FieldRef Name="OBStatus" />
+                <FieldRef Name="OBNewHireName" />
+                <FieldRef Name="OBDueWithinDays" />
+                <FieldRef Name="OBCompletedDate" />
+              </ViewFields>
+              <Query>
+                <GroupBy Collapse="TRUE" GroupLimit="30">
+                  <FieldRef Name="OBAssignedDepartment" />
+                </GroupBy>
+                <OrderBy>
+                  <FieldRef Name="OBDueWithinDays" />
+                </OrderBy>
+              </Query>
+              <RowLimit Paged="TRUE">100</RowLimit>
+            </View>
+
+            <View DisplayName="By New Hire" BaseViewID="3" Type="HTML">
+              <ViewFields>
+                <FieldRef Name="LinkTitle" />
+                <FieldRef Name="OBAssignedDepartment" />
+                <FieldRef Name="OBStatus" />
+                <FieldRef Name="OBDueWithinDays" />
+                <FieldRef Name="OBCompletedDate" />
+              </ViewFields>
+              <Query>
+                <GroupBy Collapse="TRUE" GroupLimit="30">
+                  <FieldRef Name="OBNewHireName" />
+                </GroupBy>
+                <OrderBy>
+                  <FieldRef Name="OBDueWithinDays" />
+                </OrderBy>
+              </Query>
+              <RowLimit Paged="TRUE">100</RowLimit>
+            </View>
+
+            <View DisplayName="Incomplete Tasks" BaseViewID="4" Type="HTML">
+              <ViewFields>
+                <FieldRef Name="LinkTitle" />
+                <FieldRef Name="OBAssignedDepartment" />
+                <FieldRef Name="OBStatus" />
+                <FieldRef Name="OBNewHireName" />
+                <FieldRef Name="OBStartDate" />
+                <FieldRef Name="OBDueWithinDays" />
+              </ViewFields>
+              <Query>
+                <Where>
+                  <Neq>
+                    <FieldRef Name="OBStatus" />
+                    <Value Type="Choice">Completed</Value>
+                  </Neq>
+                </Where>
+                <OrderBy>
+                  <FieldRef Name="OBStartDate" />
+                  <FieldRef Name="OBDueWithinDays" />
+                </OrderBy>
+              </Query>
+              <RowLimit Paged="TRUE">30</RowLimit>
+            </View>
+          </pnp:Views>
+
+        </pnp:ListInstance>
+      </pnp:Lists>
+
+    </pnp:ProvisioningTemplate>
+  </pnp:Templates>
+</pnp:Provisioning>

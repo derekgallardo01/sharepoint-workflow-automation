@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Actions - SharePoint List View</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f3f2f1; }
+        .status-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; color: #fff; }
+        .priority-badge { display: inline-block; padding: 1px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; color: #fff; }
+        .progress-bar-container { width: 80px; height: 6px; background: #edebe9; border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; }
+        .progress-bar-fill { height: 100%; border-radius: 3px; }
+        .list-row:hover { background: #f3f2f1; }
+        .selected-row { background: #deecf9 !important; }
+        .custom-btn { background: #0078d4; color: white; padding: 4px 12px; border-radius: 3px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; }
+        .custom-btn-active { background: #005a9e; color: white; padding: 6px 16px; border-radius: 3px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .spinner { animation: spin 1s linear infinite; }
+        @keyframes slideUp { 0% { transform: translateY(100px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+        .toast { animation: slideUp 0.3s ease-out; }
+        .updating-overlay { position: relative; }
+        .updating-overlay::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.7);
+        }
+    </style>
+</head>
+<body>
+    <!-- SharePoint Top Bar -->
+    <div style="background: #0078d4; height: 48px; display: flex; align-items: center; padding: 0 16px; color: white;">
+        <div style="display: flex; align-items: center; gap: 16px; flex: 1;">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="white">
+                <rect x="1" y="1" width="4" height="4" rx="0.5"/><rect x="8" y="1" width="4" height="4" rx="0.5"/><rect x="15" y="1" width="4" height="4" rx="0.5"/>
+                <rect x="1" y="8" width="4" height="4" rx="0.5"/><rect x="8" y="8" width="4" height="4" rx="0.5"/><rect x="15" y="8" width="4" height="4" rx="0.5"/>
+                <rect x="1" y="15" width="4" height="4" rx="0.5"/><rect x="8" y="15" width="4" height="4" rx="0.5"/><rect x="15" y="15" width="4" height="4" rx="0.5"/>
+            </svg>
+            <span style="font-weight: 600; font-size: 16px;">SharePoint</span>
+        </div>
+        <div style="flex: 2; display: flex; justify-content: center;">
+            <div style="background: rgba(255,255,255,0.15); border-radius: 4px; padding: 6px 16px; width: 400px; display: flex; align-items: center; gap: 8px;">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="rgba(255,255,255,0.8)"><path d="M11.4 10l4.3 4.3-1.4 1.4L10 11.4A6.5 6.5 0 1111.4 10zM6.5 11A4.5 4.5 0 1011 6.5 4.5 4.5 0 006.5 11z"/></svg>
+                <span style="color: rgba(255,255,255,0.7); font-size: 14px;">Search this site</span>
+            </div>
+        </div>
+        <div style="flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 16px;">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: #5c2d91; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: white;">DS</div>
+        </div>
+    </div>
+
+    <!-- Site Header -->
+    <div style="background: white; padding: 16px 32px; border-bottom: 1px solid #edebe9;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 4px; background: #0078d4; display: flex; align-items: center; justify-content: center;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm2 2h10v2H7V7zm0 4h10v2H7v-2zm0 4h6v2H7v-2z"/></svg>
+            </div>
+            <div>
+                <div style="font-size: 18px; font-weight: 700; color: #323130;">Workflow Automation</div>
+                <div style="font-size: 12px; color: #605e5c;">SharePoint Online</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Selection Info Bar -->
+    <div style="background: #deecf9; padding: 8px 32px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #c7e0f4;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="#0078d4"><path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/></svg>
+            <span style="font-size: 14px; font-weight: 600; color: #0078d4;">4 items selected</span>
+        </div>
+        <button style="background: none; border: none; color: #0078d4; cursor: pointer; font-size: 13px;">Clear selection</button>
+    </div>
+
+    <!-- List Content -->
+    <div style="padding: 20px 32px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+            <h1 style="font-size: 22px; font-weight: 700; color: #323130; margin: 0;">Project Tracker</h1>
+        </div>
+
+        <!-- Active Toolbar with selection -->
+        <div style="background: white; border: 1px solid #0078d4; border-radius: 4px 4px 0 0; padding: 8px 16px; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(0,120,212,0.15);">
+            <button class="custom-btn-active" style="display: flex; align-items: center; gap: 6px; background: #005a9e;">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="white"><path d="M5.5 10.5L2 7l1.4-1.4 2.1 2.1 4.6-4.6L11.5 4.5z"/></svg>
+                Bulk Approve (4 selected)
+            </button>
+            <button class="custom-btn" style="display: flex; align-items: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="white"><path d="M7 1v8M3 5l4 4 4-4M2 11h10v1H2z"/></svg>
+                Export CSV
+            </button>
+            <button class="custom-btn" style="display: flex; align-items: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="white"><circle cx="7" cy="4" r="2.5"/><path d="M2.5 12c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5"/></svg>
+                Assign To
+            </button>
+            <span style="margin-left: auto; font-size: 12px; color: #605e5c;">Select items to perform bulk actions</span>
+        </div>
+
+        <!-- List Table -->
+        <div style="background: white; border: 1px solid #edebe9; border-top: none; overflow: hidden;">
+            <!-- Column Headers -->
+            <div style="display: grid; grid-template-columns: 40px 2fr 120px 90px 150px 110px 100px; padding: 8px 12px; background: #faf9f8; border-bottom: 1px solid #edebe9; font-size: 12px; font-weight: 600; color: #605e5c;">
+                <div><input type="checkbox" checked style="margin: 0; accent-color: #0078d4;"></div>
+                <div>Title</div>
+                <div>Status</div>
+                <div>Priority</div>
+                <div>Assigned To</div>
+                <div>Due Date</div>
+                <div>% Complete</div>
+            </div>
+
+            <!-- Row 1: Selected -->
+            <div class="list-row selected-row" style="display: grid; grid-template-columns: 40px 2fr 120px 90px 150px 110px 100px; padding: 10px 12px; border-bottom: 1px solid #f3f2f1; font-size: 13px; color: #323130; align-items: center;">
+                <div><input type="checkbox" checked style="accent-color: #0078d4;"></div>
+                <div style="color: #0078d4; font-weight: 600;">Cloud Migration Phase 2</div>
+                <div><span class="status-badge" style="background: #0078d4;">In Progress</span></div>
+                <div><span class="priority-badge" style="background: #a80000;">High</span></div>
+                <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: #0078d4; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">SM</div>Sarah Mitchell</div>
+                <div>Apr 15, 2026</div>
+                <div style="display: flex; align-items: center; gap: 6px;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width: 65%; background: #0078d4;"></div></div><span style="font-size: 11px;">65%</span></div>
+            </div>
+
+            <!-- Row 2: Selected -->
+            <div class="list-row selected-row" style="display: grid; grid-template-columns: 40px 2fr 120px 90px 150px 110px 100px; padding: 10px 12px; border-bottom: 1px solid #f3f2f1; font-size: 13px; color: #323130; align-items: center;">
+                <div><input type="checkbox" checked style="accent-color: #0078d4;"></div>
+                <div style="color: #0078d4; font-weight: 600;">API Gateway Redesign</div>
+                <div><span class="status-badge" style="background: #0078d4;">In Progress</span></div>
+                <div><span class="priority-badge" style="background: #d83b01;">Medium</span></div>
+                <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: #107c10; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">JC</div>James Chen</div>
+                <div>Apr 28, 2026</div>
+                <div style="display: flex; align-items: center; gap: 6px;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width: 40%; background: #0078d4;"></div></div><span style="font-size: 11px;">40%</span></div>
+            </div>
+
+            <!-- Row 3: Selected, updating -->
+            <div class="list-row selected-row updating-overlay" style="display: grid; grid-template-columns: 40px 2fr 120px 90px 150px 110px 100px; padding: 10px 12px; border-bottom: 1px solid #f3f2f1; font-size: 13px; color: #323130; align-items: center; position: relative;">
+                <div><input type="checkbox" checked style="accent-color: #0078d4;"></div>
+                <div style="color: #0078d4; font-weight: 600;">Data Governance Policy v3</div>
+                <div><span class="status-badge" style="background: #d83b01;">Under Review</span></div>
+                <div><span class="priority-badge" style="background: #d83b01;">Medium</span></div>
+                <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: #ca5010; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">ML</div>Mike Liu</div>
+                <div>Apr 5, 2026</div>
+                <div style="display: flex; align-items: center; gap: 6px;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width: 90%; background: #d83b01;"></div></div><span style="font-size: 11px;">90%</span></div>
+                <!-- Updating overlay -->
+                <div style="position: absolute; inset: 0; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; gap: 8px; z-index: 10;">
+                    <svg class="spinner" width="20" height="20" viewBox="0 0 20 20" style="color: #0078d4;">
+                        <circle cx="10" cy="10" r="8" fill="none" stroke="#edebe9" stroke-width="2"/>
+                        <path d="M10 2a8 8 0 018 8" fill="none" stroke="#0078d4" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <span style="font-size: 13px; font-weight: 600; color: #0078d4;">Updating...</span>
+                </div>
+            </div>
+
+            <!-- Row 4: Selected -->
+            <div class="list-row selected-row" style="display: grid; grid-template-columns: 40px 2fr 120px 90px 150px 110px 100px; padding: 10px 12px; border-bottom: 1px solid #f3f2f1; font-size: 13px; color: #323130; align-items: center;">
+                <div><input type="checkbox" checked style="accent-color: #0078d4;"></div>
+                <div style="color: #0078d4; font-weight: 600;">Security Audit Remediation</div>
+                <div><span class="status-badge" style="background: #0078d4;">In Progress</span></div>
+                <div><span class="priority-badge" style="background: #a80000;">High</span></div>
+                <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: #5c2d91; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">RP</div>Rachel Park</div>
+                <div>Apr 10, 2026</div>
+                <div style="display: flex; align-items: center; gap: 6px;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width: 80%; background: #0078d4;"></div></div><span style="font-size: 11px;">80%</span></div>
+            </div>
+
+            <!-- Row 5: Not selected -->
+            <div class="list-row" style="display: grid; grid-template-columns: 40px 2fr 120px 90px 150px 110px 100px; padding: 10px 12px; border-bottom: 1px solid #f3f2f1; font-size: 13px; color: #323130; align-items: center;">
+                <div><input type="checkbox"></div>
+                <div style="color: #0078d4; font-weight: 600;">Mobile App Refresh</div>
+                <div><span class="status-badge" style="background: #d83b01;">Under Review</span></div>
+                <div><span class="priority-badge" style="background: #107c10;">Low</span></div>
+                <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: #008272; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">AK</div>Anna Kim</div>
+                <div>May 1, 2026</div>
+                <div style="display: flex; align-items: center; gap: 6px;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width: 95%; background: #d83b01;"></div></div><span style="font-size: 11px;">95%</span></div>
+            </div>
+
+            <!-- Row 6: Not selected -->
+            <div class="list-row" style="display: grid; grid-template-columns: 40px 2fr 120px 90px 150px 110px 100px; padding: 10px 12px; border-bottom: 1px solid #f3f2f1; font-size: 13px; color: #323130; align-items: center;">
+                <div><input type="checkbox"></div>
+                <div style="color: #0078d4; font-weight: 600;">Vendor Onboarding Portal</div>
+                <div><span class="status-badge" style="background: #808080;">Not Started</span></div>
+                <div><span class="priority-badge" style="background: #d83b01;">Medium</span></div>
+                <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: #0078d4; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">DW</div>David Wang</div>
+                <div>May 15, 2026</div>
+                <div style="display: flex; align-items: center; gap: 6px;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width: 0%; background: #808080;"></div></div><span style="font-size: 11px;">0%</span></div>
+            </div>
+
+            <!-- Row 7: Not selected -->
+            <div class="list-row" style="display: grid; grid-template-columns: 40px 2fr 120px 90px 150px 110px 100px; padding: 10px 12px; font-size: 13px; color: #323130; align-items: center;">
+                <div><input type="checkbox"></div>
+                <div style="color: #0078d4; font-weight: 600;">Q1 Budget Allocation</div>
+                <div><span class="status-badge" style="background: #107c10;">Approved</span></div>
+                <div><span class="priority-badge" style="background: #a80000;">High</span></div>
+                <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; border-radius: 50%; background: #0078d4; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">SM</div>Sarah Mitchell</div>
+                <div>Mar 15, 2026</div>
+                <div style="display: flex; align-items: center; gap: 6px;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width: 100%; background: #107c10;"></div></div><span style="font-size: 11px;">100%</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Toast Notification -->
+    <div class="toast" style="position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #107c10; color: white; padding: 12px 24px; border-radius: 4px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 12px; z-index: 100;">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="white">
+            <path d="M10 0a10 10 0 1010 10A10 10 0 0010 0zm4.3 7.3l-5 5a1 1 0 01-1.4 0l-2.5-2.5a1 1 0 011.4-1.4L8.6 10.2l4.3-4.3a1 1 0 011.4 1.4z"/>
+        </svg>
+        <div>
+            <div style="font-weight: 600; font-size: 14px;">3 items approved successfully</div>
+            <div style="font-size: 12px; opacity: 0.9;">1 item still processing...</div>
+        </div>
+        <button style="background: none; border: none; color: white; cursor: pointer; margin-left: 16px; font-size: 18px; opacity: 0.8;">&times;</button>
+    </div>
+</body>
+</html>

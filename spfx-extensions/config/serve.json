@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/spfx-serve.schema.json",
+  "port": 4321,
+  "https": true,
+  "serveConfigurations": {
+    "bulkActions": {
+      "pageUrl": "https://contoso.sharepoint.com/sites/workflow-demo/Lists/ProjectTracker/AllItems.aspx",
+      "customActions": {
+        "bf1e4ec6-92a7-4c3d-b579-dfb4ce402707": {
+          "location": "ClientSideExtension.ListViewCommandSet.CommandBar",
+          "properties": {}
+        }
+      }
+    },
+    "statusField": {
+      "pageUrl": "https://contoso.sharepoint.com/sites/workflow-demo/Lists/ProjectTracker/AllItems.aspx",
+      "fieldCustomizers": {
+        "Status": {
+          "id": "a8e2c5d1-6b3f-4e7a-9c12-8d5f0e4b3a71",
+          "properties": {}
+        }
+      }
+    },
+    "default": {
+      "pageUrl": "https://contoso.sharepoint.com/sites/workflow-demo/Lists/ProjectTracker/AllItems.aspx",
+      "customActions": {
+        "bf1e4ec6-92a7-4c3d-b579-dfb4ce402707": {
+          "location": "ClientSideExtension.ListViewCommandSet.CommandBar",
+          "properties": {}
+        }
+      },
+      "fieldCustomizers": {
+        "Status": {
+          "id": "a8e2c5d1-6b3f-4e7a-9c12-8d5f0e4b3a71",
+          "properties": {}
+        }
+      }
+    }
+  }
+}

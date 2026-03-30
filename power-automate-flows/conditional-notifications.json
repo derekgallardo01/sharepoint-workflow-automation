@@ -1,0 +1,278 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "name": "Smart Conditional Notifications",
+    "description": "Routes notifications based on item priority and category when new project items are created",
+    "category": "Notification",
+    "tags": ["notification", "teams", "email", "priority-routing"]
+  },
+  "parameters": {
+    "$connections": {
+      "defaultValue": {},
+      "type": "Object"
+    },
+    "siteUrl": {
+      "defaultValue": "https://contoso.sharepoint.com/sites/workflow-demo",
+      "type": "String"
+    },
+    "projectListId": {
+      "defaultValue": "",
+      "type": "String",
+      "metadata": {
+        "description": "GUID of the Project Tracker list"
+      }
+    },
+    "teamsChannelId": {
+      "defaultValue": "",
+      "type": "String",
+      "metadata": {
+        "description": "Teams channel ID for high-priority notifications"
+      }
+    },
+    "teamsGroupId": {
+      "defaultValue": "",
+      "type": "String",
+      "metadata": {
+        "description": "Teams group (team) ID"
+      }
+    }
+  },
+  "triggers": {
+    "When_a_new_item_is_created": {
+      "type": "ApiConnectionWebhook",
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+          }
+        },
+        "body": {
+          "NotificationUrl": "@{listCallbackUrl()}"
+        },
+        "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('projectListId')))}/onnewitemswebhook"
+      }
+    }
+  },
+  "actions": {
+    "Initialize_NotificationsSent": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "NotificationsSent",
+            "type": "array",
+            "value": []
+          }
+        ]
+      },
+      "runAfter": {}
+    },
+    "Get_Item_Details": {
+      "type": "ApiConnection",
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+          }
+        },
+        "method": "get",
+        "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('projectListId')))}/items/@{triggerOutputs()?['body/ID']}",
+        "queries": {
+          "$expand": "ProjectAssignedTo"
+        }
+      },
+      "runAfter": {
+        "Initialize_NotificationsSent": ["Succeeded"]
+      }
+    },
+    "Get_Assigned_User_Manager": {
+      "type": "ApiConnection",
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['office365users']['connectionId']"
+          }
+        },
+        "method": "get",
+        "path": "/users/@{outputs('Get_Item_Details')?['body/ProjectAssignedTo/Email']}/manager"
+      },
+      "runAfter": {
+        "Get_Item_Details": ["Succeeded"]
+      },
+      "runtimeConfiguration": {
+        "staticResult": {
+          "name": "Get_Assigned_User_Manager_Fallback",
+          "staticResultOptions": "Disabled"
+        }
+      }
+    },
+    "Switch_On_Priority": {
+      "type": "Switch",
+      "expression": "@outputs('Get_Item_Details')?['body/ProjectPriority/Value']",
+      "runAfter": {
+        "Get_Assigned_User_Manager": ["Succeeded", "Failed"]
+      },
+      "cases": {
+        "High_Priority": {
+          "case": "High",
+          "actions": {
+            "Post_Teams_Channel_Message_High": {
+              "type": "ApiConnection",
+              "inputs": {
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['teams']['connectionId']"
+                  }
+                },
+                "method": "post",
+                "path": "/v1.0/teams/@{parameters('teamsGroupId')}/channels/@{parameters('teamsChannelId')}/messages",
+                "body": {
+                  "body": {
+                    "contentType": "html",
+                    "content": "<h3>&#x1F534; High Priority Project Created</h3><table><tr><td><strong>Title:</strong></td><td>@{outputs('Get_Item_Details')?['body/Title']}</td></tr><tr><td><strong>Priority:</strong></td><td>High</td></tr><tr><td><strong>Assigned To:</strong></td><td>@{outputs('Get_Item_Details')?['body/ProjectAssignedTo/DisplayName']}</td></tr><tr><td><strong>Due Date:</strong></td><td>@{outputs('Get_Item_Details')?['body/ProjectDueDate']}</td></tr><tr><td><strong>Description:</strong></td><td>@{outputs('Get_Item_Details')?['body/ProjectDescription']}</td></tr></table><p><a href=\"@{outputs('Get_Item_Details')?['body/{Link}']}\">View Item</a></p>"
+                  }
+                }
+              }
+            },
+            "Send_Manager_Email_High": {
+              "type": "ApiConnection",
+              "inputs": {
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['office365']['connectionId']"
+                  }
+                },
+                "method": "post",
+                "path": "/v2/Mail",
+                "body": {
+                  "To": "@{if(equals(outputs('Get_Assigned_User_Manager')?['statusCode'], 200), outputs('Get_Assigned_User_Manager')?['body/mail'], outputs('Get_Item_Details')?['body/ProjectAssignedTo/Email'])}",
+                  "Subject": "[HIGH PRIORITY] New Project: @{outputs('Get_Item_Details')?['body/Title']}",
+                  "Body": "<h2>High Priority Project Created</h2><p>A new high-priority project has been created and requires immediate attention.</p><table border='1' cellpadding='8' style='border-collapse:collapse'><tr><td><strong>Title</strong></td><td>@{outputs('Get_Item_Details')?['body/Title']}</td></tr><tr><td><strong>Assigned To</strong></td><td>@{outputs('Get_Item_Details')?['body/ProjectAssignedTo/DisplayName']}</td></tr><tr><td><strong>Due Date</strong></td><td>@{formatDateTime(outputs('Get_Item_Details')?['body/ProjectDueDate'], 'MMMM dd, yyyy')}</td></tr><tr><td><strong>Description</strong></td><td>@{outputs('Get_Item_Details')?['body/ProjectDescription']}</td></tr></table><p><a href=\"@{outputs('Get_Item_Details')?['body/{Link}']}\">View in SharePoint</a></p>",
+                  "Importance": "High"
+                }
+              },
+              "runAfter": {
+                "Post_Teams_Channel_Message_High": ["Succeeded"]
+              }
+            },
+            "Append_High_Notifications": {
+              "type": "AppendToArrayVariable",
+              "inputs": {
+                "name": "NotificationsSent",
+                "value": "Teams Channel + Manager Email (High Priority)"
+              },
+              "runAfter": {
+                "Send_Manager_Email_High": ["Succeeded"]
+              }
+            }
+          }
+        },
+        "Medium_Priority": {
+          "case": "Medium",
+          "actions": {
+            "Post_Teams_Channel_Message_Medium": {
+              "type": "ApiConnection",
+              "inputs": {
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['teams']['connectionId']"
+                  }
+                },
+                "method": "post",
+                "path": "/v1.0/teams/@{parameters('teamsGroupId')}/channels/@{parameters('teamsChannelId')}/messages",
+                "body": {
+                  "body": {
+                    "contentType": "html",
+                    "content": "<h3>&#x1F7E1; New Project Created</h3><table><tr><td><strong>Title:</strong></td><td>@{outputs('Get_Item_Details')?['body/Title']}</td></tr><tr><td><strong>Priority:</strong></td><td>Medium</td></tr><tr><td><strong>Assigned To:</strong></td><td>@{outputs('Get_Item_Details')?['body/ProjectAssignedTo/DisplayName']}</td></tr><tr><td><strong>Due Date:</strong></td><td>@{outputs('Get_Item_Details')?['body/ProjectDueDate']}</td></tr></table><p><a href=\"@{outputs('Get_Item_Details')?['body/{Link}']}\">View Item</a></p>"
+                  }
+                }
+              }
+            },
+            "Append_Medium_Notifications": {
+              "type": "AppendToArrayVariable",
+              "inputs": {
+                "name": "NotificationsSent",
+                "value": "Teams Channel (Medium Priority)"
+              },
+              "runAfter": {
+                "Post_Teams_Channel_Message_Medium": ["Succeeded"]
+              }
+            }
+          }
+        },
+        "Low_Priority": {
+          "case": "Low",
+          "actions": {
+            "Add_to_Digest_List": {
+              "type": "ApiConnection",
+              "inputs": {
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                  }
+                },
+                "method": "post",
+                "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent('NotificationDigest'))}/items",
+                "body": {
+                  "Title": "@{outputs('Get_Item_Details')?['body/Title']}",
+                  "SourceItemId": "@{outputs('Get_Item_Details')?['body/ID']}",
+                  "SourceList": "ProjectTracker",
+                  "NotificationType": "NewItem",
+                  "Priority": "Low",
+                  "AssignedTo": "@{outputs('Get_Item_Details')?['body/ProjectAssignedTo/DisplayName']}",
+                  "Processed": false
+                }
+              }
+            },
+            "Append_Low_Notifications": {
+              "type": "AppendToArrayVariable",
+              "inputs": {
+                "name": "NotificationsSent",
+                "value": "Queued for Weekly Digest (Low Priority)"
+              },
+              "runAfter": {
+                "Add_to_Digest_List": ["Succeeded"]
+              }
+            }
+          }
+        }
+      },
+      "default": {
+        "actions": {
+          "Post_Teams_Default": {
+            "type": "ApiConnection",
+            "inputs": {
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['teams']['connectionId']"
+                }
+              },
+              "method": "post",
+              "path": "/v1.0/teams/@{parameters('teamsGroupId')}/channels/@{parameters('teamsChannelId')}/messages",
+              "body": {
+                "body": {
+                  "contentType": "html",
+                  "content": "<p>New project created: <strong>@{outputs('Get_Item_Details')?['body/Title']}</strong> (Priority: @{outputs('Get_Item_Details')?['body/ProjectPriority/Value']})</p>"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Log_Notification_Result": {
+      "type": "Compose",
+      "inputs": {
+        "itemId": "@{triggerOutputs()?['body/ID']}",
+        "title": "@{outputs('Get_Item_Details')?['body/Title']}",
+        "priority": "@{outputs('Get_Item_Details')?['body/ProjectPriority/Value']}",
+        "notificationsSent": "@variables('NotificationsSent')",
+        "timestamp": "@{utcNow()}"
+      },
+      "runAfter": {
+        "Switch_On_Priority": ["Succeeded"]
+      }
+    }
+  }
+}

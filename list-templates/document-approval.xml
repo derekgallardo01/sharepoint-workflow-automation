@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<pnp:Provisioning xmlns:pnp="http://schemas.dev.office.com/PnP/2023/01/ProvisioningSchema">
+  <pnp:Preferences Generator="PnP" />
+  <pnp:Templates ID="CONTAINER-TEMPLATE-DOCUMENT-APPROVAL">
+    <pnp:ProvisioningTemplate ID="TEMPLATE-DOCUMENT-APPROVAL" Version="1" BaseSiteTemplate="STS#3">
+
+      <pnp:SiteFields>
+        <Field ID="{B1C4D7E0-3A6F-4829-9E5C-7D1A2B8F3C60}"
+               Name="DocumentLink"
+               DisplayName="Document Link"
+               Type="URL"
+               Format="Hyperlink"
+               Group="Workflow Automation" />
+
+        <Field ID="{C2D5E8F1-4B70-493A-AF6D-8E2B3C9F4D71}"
+               Name="ApprovalSubmitter"
+               DisplayName="Submitter"
+               Type="User"
+               UserSelectionMode="PeopleOnly"
+               Group="Workflow Automation" />
+
+        <Field ID="{D3E6F902-5C81-4A4B-B07E-9F3C4DA05E82}"
+               Name="ApprovalReviewer"
+               DisplayName="Reviewer"
+               Type="User"
+               UserSelectionMode="PeopleOnly"
+               Group="Workflow Automation" />
+
+        <Field ID="{E4F70A13-6D92-4B5C-C18F-A04D5EB16F93}"
+               Name="ApprovalStatus"
+               DisplayName="Status"
+               Type="Choice"
+               Group="Workflow Automation">
+          <CHOICES>
+            <CHOICE>Pending</CHOICE>
+            <CHOICE>Approved</CHOICE>
+            <CHOICE>Rejected</CHOICE>
+            <CHOICE>Revision Required</CHOICE>
+          </CHOICES>
+          <Default>Pending</Default>
+        </Field>
+
+        <Field ID="{F5081B24-7EA3-4C6D-D290-B15E6FC27A04}"
+               Name="SubmitDate"
+               DisplayName="Submit Date"
+               Type="DateTime"
+               Format="DateOnly"
+               Group="Workflow Automation" />
+
+        <Field ID="{06192C35-8FB4-4D7E-E3A1-C26F7GD38B15}"
+               Name="ReviewDate"
+               DisplayName="Review Date"
+               Type="DateTime"
+               Format="DateOnly"
+               Group="Workflow Automation" />
+
+        <Field ID="{172A3D46-9AC5-4E8F-F4B2-D370HE49C26}"
+               Name="ApprovalComments"
+               DisplayName="Comments"
+               Type="Note"
+               RichText="TRUE"
+               NumLines="6"
+               Group="Workflow Automation" />
+
+        <Field ID="{283B4E57-ABD6-4F90-05C3-E481IF5AD37}"
+               Name="ApprovalPriority"
+               DisplayName="Priority"
+               Type="Choice"
+               Group="Workflow Automation">
+          <CHOICES>
+            <CHOICE>High</CHOICE>
+            <CHOICE>Medium</CHOICE>
+            <CHOICE>Low</CHOICE>
+          </CHOICES>
+          <Default>Medium</Default>
+        </Field>
+      </pnp:SiteFields>
+
+      <pnp:ContentTypes>
+        <pnp:ContentType ID="0x01005B9D4E8C3A2F7160BC5D6E7F8901"
+                         Name="ApprovalItem"
+                         Description="Content type for document approval queue items"
+                         Group="Workflow Automation">
+          <pnp:FieldRefs>
+            <pnp:FieldRef ID="{fa564e0f-0c70-4ab9-b863-0177e6ddd247}" Name="Title" Required="true" />
+            <pnp:FieldRef ID="{B1C4D7E0-3A6F-4829-9E5C-7D1A2B8F3C60}" Name="DocumentLink" Required="true" />
+            <pnp:FieldRef ID="{C2D5E8F1-4B70-493A-AF6D-8E2B3C9F4D71}" Name="ApprovalSubmitter" Required="true" />
+            <pnp:FieldRef ID="{D3E6F902-5C81-4A4B-B07E-9F3C4DA05E82}" Name="ApprovalReviewer" />
+            <pnp:FieldRef ID="{E4F70A13-6D92-4B5C-C18F-A04D5EB16F93}" Name="ApprovalStatus" Required="true" />
+            <pnp:FieldRef ID="{F5081B24-7EA3-4C6D-D290-B15E6FC27A04}" Name="SubmitDate" />
+            <pnp:FieldRef ID="{06192C35-8FB4-4D7E-E3A1-C26F7GD38B15}" Name="ReviewDate" />
+            <pnp:FieldRef ID="{172A3D46-9AC5-4E8F-F4B2-D370HE49C26}" Name="ApprovalComments" />
+            <pnp:FieldRef ID="{283B4E57-ABD6-4F90-05C3-E481IF5AD37}" Name="ApprovalPriority" />
+          </pnp:FieldRefs>
+        </pnp:ContentType>
+      </pnp:ContentTypes>
+
+      <pnp:Lists>
+        <pnp:ListInstance Title="Document Approval Queue"
+                          Description="Queue for managing document review and approval workflows"
+                          TemplateType="100"
+                          Url="Lists/DocumentApproval"
+                          EnableVersioning="true"
+                          EnableMinorVersions="false"
+                          ContentTypesEnabled="true">
+
+          <pnp:ContentTypeBindings>
+            <pnp:ContentTypeBinding ContentTypeID="0x01005B9D4E8C3A2F7160BC5D6E7F8901" Default="true" />
+          </pnp:ContentTypeBindings>
+
+          <pnp:Views>
+            <View DisplayName="All Items" DefaultView="TRUE" MobileDefaultView="TRUE" BaseViewID="1" Type="HTML">
+              <ViewFields>
+                <FieldRef Name="LinkTitle" />
+                <FieldRef Name="ApprovalStatus" />
+                <FieldRef Name="ApprovalSubmitter" />
+                <FieldRef Name="ApprovalReviewer" />
+                <FieldRef Name="SubmitDate" />
+                <FieldRef Name="ApprovalPriority" />
+              </ViewFields>
+              <Query>
+                <OrderBy>
+                  <FieldRef Name="SubmitDate" Ascending="FALSE" />
+                </OrderBy>
+              </Query>
+              <RowLimit Paged="TRUE">30</RowLimit>
+            </View>
+
+            <View DisplayName="Pending Approvals" BaseViewID="2" Type="HTML">
+              <ViewFields>
+                <FieldRef Name="LinkTitle" />
+                <FieldRef Name="ApprovalSubmitter" />
+                <FieldRef Name="ApprovalReviewer" />
+                <FieldRef Name="SubmitDate" />
+                <FieldRef Name="ApprovalPriority" />
+                <FieldRef Name="DocumentLink" />
+              </ViewFields>
+              <Query>
+                <Where>
+                  <Eq>
+                    <FieldRef Name="ApprovalStatus" />
+                    <Value Type="Choice">Pending</Value>
+                  </Eq>
+                </Where>
+                <OrderBy>
+                  <FieldRef Name="ApprovalPriority" />
+                  <FieldRef Name="SubmitDate" />
+                </OrderBy>
+              </Query>
+              <RowLimit Paged="TRUE">30</RowLimit>
+            </View>
+
+            <View DisplayName="My Submissions" BaseViewID="3" Type="HTML">
+              <ViewFields>
+                <FieldRef Name="LinkTitle" />
+                <FieldRef Name="ApprovalStatus" />
+                <FieldRef Name="ApprovalReviewer" />
+                <FieldRef Name="SubmitDate" />
+                <FieldRef Name="ReviewDate" />
+                <FieldRef Name="ApprovalComments" />
+              </ViewFields>
+              <Query>
+                <Where>
+                  <Eq>
+                    <FieldRef Name="ApprovalSubmitter" />
+                    <Value Type="Integer"><UserID /></Value>
+                  </Eq>
+                </Where>
+                <OrderBy>
+                  <FieldRef Name="SubmitDate" Ascending="FALSE" />
+                </OrderBy>
+              </Query>
+              <RowLimit Paged="TRUE">30</RowLimit>
+            </View>
+
+            <View DisplayName="Recently Reviewed" BaseViewID="4" Type="HTML">
+              <ViewFields>
+                <FieldRef Name="LinkTitle" />
+                <FieldRef Name="ApprovalStatus" />
+                <FieldRef Name="ApprovalSubmitter" />
+                <FieldRef Name="ApprovalReviewer" />
+                <FieldRef Name="ReviewDate" />
+                <FieldRef Name="ApprovalComments" />
+              </ViewFields>
+              <Query>
+                <Where>
+                  <And>
+                    <IsNotNull>
+                      <FieldRef Name="ReviewDate" />
+                    </IsNotNull>
+                    <Neq>
+                      <FieldRef Name="ApprovalStatus" />
+                      <Value Type="Choice">Pending</Value>
+                    </Neq>
+                  </And>
+                </Where>
+                <OrderBy>
+                  <FieldRef Name="ReviewDate" Ascending="FALSE" />
+                </OrderBy>
+              </Query>
+              <RowLimit Paged="TRUE">30</RowLimit>
+            </View>
+          </pnp:Views>
+
+        </pnp:ListInstance>
+      </pnp:Lists>
+
+    </pnp:ProvisioningTemplate>
+  </pnp:Templates>
+</pnp:Provisioning>

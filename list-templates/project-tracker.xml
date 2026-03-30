@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<pnp:Provisioning xmlns:pnp="http://schemas.dev.office.com/PnP/2023/01/ProvisioningSchema">
+  <pnp:Preferences Generator="PnP" />
+  <pnp:Templates ID="CONTAINER-TEMPLATE-PROJECT-TRACKER">
+    <pnp:ProvisioningTemplate ID="TEMPLATE-PROJECT-TRACKER" Version="1" BaseSiteTemplate="STS#3">
+
+      <pnp:SiteFields>
+        <Field ID="{8A5C5E72-1D01-4B3A-8F6E-C2D9A7E03B10}"
+               Name="ProjectDescription"
+               DisplayName="Description"
+               Type="Note"
+               RichText="TRUE"
+               NumLines="6"
+               Group="Workflow Automation" />
+
+        <Field ID="{3F2E7A91-5C84-4D6B-AE12-9B0F1C3D5E78}"
+               Name="ProjectStatus"
+               DisplayName="Status"
+               Type="Choice"
+               Group="Workflow Automation">
+          <CHOICES>
+            <CHOICE>Not Started</CHOICE>
+            <CHOICE>In Progress</CHOICE>
+            <CHOICE>Under Review</CHOICE>
+            <CHOICE>Approved</CHOICE>
+            <CHOICE>Rejected</CHOICE>
+          </CHOICES>
+          <Default>Not Started</Default>
+        </Field>
+
+        <Field ID="{6B9D4F23-8E71-4A5C-B0D6-2C1F9A8E3D47}"
+               Name="ProjectPriority"
+               DisplayName="Priority"
+               Type="Choice"
+               Group="Workflow Automation">
+          <CHOICES>
+            <CHOICE>High</CHOICE>
+            <CHOICE>Medium</CHOICE>
+            <CHOICE>Low</CHOICE>
+          </CHOICES>
+          <Default>Medium</Default>
+        </Field>
+
+        <Field ID="{D4A1E538-7C29-4B6F-9E03-5A8D2F1C7B94}"
+               Name="ProjectAssignedTo"
+               DisplayName="Assigned To"
+               Type="User"
+               UserSelectionMode="PeopleOnly"
+               Group="Workflow Automation" />
+
+        <Field ID="{E7C3B196-2D5A-4F8E-A041-3C9E6B7D8F12}"
+               Name="ProjectDueDate"
+               DisplayName="Due Date"
+               Type="DateTime"
+               Format="DateOnly"
+               Group="Workflow Automation" />
+
+        <Field ID="{1F8A4D63-9E27-4B5C-C0A8-7D3E2F6B9C15}"
+               Name="ProjectPercentComplete"
+               DisplayName="% Complete"
+               Type="Number"
+               Min="0"
+               Max="100"
+               Percentage="TRUE"
+               Group="Workflow Automation" />
+
+        <Field ID="{A2B5C8D1-3E6F-4970-8A1B-C4D7E0F39265}"
+               Name="ProjectCategory"
+               DisplayName="Category"
+               Type="TaxonomyFieldType"
+               Group="Workflow Automation" />
+      </pnp:SiteFields>
+
+      <pnp:ContentTypes>
+        <pnp:ContentType ID="0x01004A8C3E7B2D5F6910AB3C4D5E6F7890"
+                         Name="ProjectItem"
+                         Description="Content type for project tracking items"
+                         Group="Workflow Automation">
+          <pnp:FieldRefs>
+            <pnp:FieldRef ID="{fa564e0f-0c70-4ab9-b863-0177e6ddd247}" Name="Title" Required="true" />
+            <pnp:FieldRef ID="{8A5C5E72-1D01-4B3A-8F6E-C2D9A7E03B10}" Name="ProjectDescription" />
+            <pnp:FieldRef ID="{3F2E7A91-5C84-4D6B-AE12-9B0F1C3D5E78}" Name="ProjectStatus" Required="true" />
+            <pnp:FieldRef ID="{6B9D4F23-8E71-4A5C-B0D6-2C1F9A8E3D47}" Name="ProjectPriority" Required="true" />
+            <pnp:FieldRef ID="{D4A1E538-7C29-4B6F-9E03-5A8D2F1C7B94}" Name="ProjectAssignedTo" />
+            <pnp:FieldRef ID="{E7C3B196-2D5A-4F8E-A041-3C9E6B7D8F12}" Name="ProjectDueDate" />
+            <pnp:FieldRef ID="{1F8A4D63-9E27-4B5C-C0A8-7D3E2F6B9C15}" Name="ProjectPercentComplete" />
+            <pnp:FieldRef ID="{A2B5C8D1-3E6F-4970-8A1B-C4D7E0F39265}" Name="ProjectCategory" />
+          </pnp:FieldRefs>
+        </pnp:ContentType>
+      </pnp:ContentTypes>
+
+      <pnp:Lists>
+        <pnp:ListInstance Title="Project Tracker"
+                          Description="Tracks project status, assignments, and progress"
+                          TemplateType="100"
+                          Url="Lists/ProjectTracker"
+                          EnableVersioning="true"
+                          EnableMinorVersions="false"
+                          ContentTypesEnabled="true">
+
+          <pnp:ContentTypeBindings>
+            <pnp:ContentTypeBinding ContentTypeID="0x01004A8C3E7B2D5F6910AB3C4D5E6F7890" Default="true" />
+          </pnp:ContentTypeBindings>
+
+          <pnp:Views>
+            <View DisplayName="All Items" DefaultView="TRUE" MobileDefaultView="TRUE" BaseViewID="1" Type="HTML">
+              <ViewFields>
+                <FieldRef Name="LinkTitle" />
+                <FieldRef Name="ProjectStatus" />
+                <FieldRef Name="ProjectPriority" />
+                <FieldRef Name="ProjectAssignedTo" />
+                <FieldRef Name="ProjectDueDate" />
+                <FieldRef Name="ProjectPercentComplete" />
+              </ViewFields>
+              <Query>
+                <OrderBy>
+                  <FieldRef Name="ProjectPriority" />
+                  <FieldRef Name="ProjectDueDate" />
+                </OrderBy>
+              </Query>
+              <RowLimit Paged="TRUE">30</RowLimit>
+            </View>
+
+            <View DisplayName="My Projects" BaseViewID="2" Type="HTML">
+              <ViewFields>
+                <FieldRef Name="LinkTitle" />
+                <FieldRef Name="ProjectStatus" />
+                <FieldRef Name="ProjectPriority" />
+                <FieldRef Name="ProjectDueDate" />
+                <FieldRef Name="ProjectPercentComplete" />
+              </ViewFields>
+              <Query>
+                <Where>
+                  <Eq>
+                    <FieldRef Name="ProjectAssignedTo" />
+                    <Value Type="Integer"><UserID /></Value>
+                  </Eq>
+                </Where>
+                <OrderBy>
+                  <FieldRef Name="ProjectDueDate" />
+                </OrderBy>
+              </Query>
+              <RowLimit Paged="TRUE">30</RowLimit>
+            </View>
+
+            <View DisplayName="Active Projects" BaseViewID="3" Type="HTML">
+              <ViewFields>
+                <FieldRef Name="LinkTitle" />
+                <FieldRef Name="ProjectStatus" />
+                <FieldRef Name="ProjectPriority" />
+                <FieldRef Name="ProjectAssignedTo" />
+                <FieldRef Name="ProjectDueDate" />
+                <FieldRef Name="ProjectPercentComplete" />
+              </ViewFields>
+              <Query>
+                <Where>
+                  <In>
+                    <FieldRef Name="ProjectStatus" />
+                    <Values>
+                      <Value Type="Choice">In Progress</Value>
+                      <Value Type="Choice">Under Review</Value>
+                    </Values>
+                  </In>
+                </Where>
+                <OrderBy>
+                  <FieldRef Name="ProjectPriority" />
+                </OrderBy>
+              </Query>
+              <RowLimit Paged="TRUE">30</RowLimit>
+            </View>
+
+            <View DisplayName="Overdue" BaseViewID="4" Type="HTML">
+              <ViewFields>
+                <FieldRef Name="LinkTitle" />
+                <FieldRef Name="ProjectStatus" />
+                <FieldRef Name="ProjectAssignedTo" />
+                <FieldRef Name="ProjectDueDate" />
+                <FieldRef Name="ProjectPercentComplete" />
+              </ViewFields>
+              <Query>
+                <Where>
+                  <And>
+                    <Lt>
+                      <FieldRef Name="ProjectDueDate" />
+                      <Value Type="DateTime"><Today /></Value>
+                    </Lt>
+                    <Neq>
+                      <FieldRef Name="ProjectStatus" />
+                      <Value Type="Choice">Approved</Value>
+                    </Neq>
+                  </And>
+                </Where>
+                <OrderBy>
+                  <FieldRef Name="ProjectDueDate" />
+                </OrderBy>
+              </Query>
+              <RowLimit Paged="TRUE">30</RowLimit>
+            </View>
+
+            <View DisplayName="By Status" BaseViewID="5" Type="HTML">
+              <ViewFields>
+                <FieldRef Name="LinkTitle" />
+                <FieldRef Name="ProjectPriority" />
+                <FieldRef Name="ProjectAssignedTo" />
+                <FieldRef Name="ProjectDueDate" />
+                <FieldRef Name="ProjectPercentComplete" />
+              </ViewFields>
+              <Query>
+                <GroupBy Collapse="TRUE" GroupLimit="30">
+                  <FieldRef Name="ProjectStatus" />
+                </GroupBy>
+                <OrderBy>
+                  <FieldRef Name="ProjectPriority" />
+                </OrderBy>
+              </Query>
+              <RowLimit Paged="TRUE">100</RowLimit>
+            </View>
+          </pnp:Views>
+
+        </pnp:ListInstance>
+      </pnp:Lists>
+
+    </pnp:ProvisioningTemplate>
+  </pnp:Templates>
+</pnp:Provisioning>

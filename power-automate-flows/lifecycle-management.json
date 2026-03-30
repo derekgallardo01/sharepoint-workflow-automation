@@ -1,0 +1,372 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "name": "Automated Lifecycle Management",
+    "description": "Daily scheduled flow that archives completed items, sends due-date reminders, and marks overdue items",
+    "category": "Lifecycle",
+    "tags": ["archive", "reminder", "overdue", "scheduled", "lifecycle"]
+  },
+  "parameters": {
+    "$connections": {
+      "defaultValue": {},
+      "type": "Object"
+    },
+    "siteUrl": {
+      "defaultValue": "https://contoso.sharepoint.com/sites/workflow-demo",
+      "type": "String"
+    },
+    "projectListId": {
+      "defaultValue": "",
+      "type": "String"
+    },
+    "archiveListId": {
+      "defaultValue": "",
+      "type": "String",
+      "metadata": {
+        "description": "GUID of the archive list where completed items are moved"
+      }
+    },
+    "auditListId": {
+      "defaultValue": "",
+      "type": "String"
+    },
+    "archiveAfterDays": {
+      "defaultValue": 90,
+      "type": "Int"
+    }
+  },
+  "triggers": {
+    "Recurrence_Daily": {
+      "type": "Recurrence",
+      "recurrence": {
+        "frequency": "Day",
+        "interval": 1,
+        "schedule": {
+          "hours": ["6"],
+          "minutes": ["0"]
+        },
+        "timeZone": "Eastern Standard Time"
+      }
+    }
+  },
+  "actions": {
+    "Initialize_AuditEntries": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "AuditEntries",
+            "type": "array",
+            "value": []
+          }
+        ]
+      },
+      "runAfter": {}
+    },
+    "Initialize_Summary": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "Summary",
+            "type": "object",
+            "value": {
+              "archived": 0,
+              "reminders": 0,
+              "overdue": 0,
+              "errors": 0
+            }
+          }
+        ]
+      },
+      "runAfter": {}
+    },
+    "Phase_1_Archive_Completed_Items": {
+      "type": "Scope",
+      "runAfter": {
+        "Initialize_AuditEntries": ["Succeeded"],
+        "Initialize_Summary": ["Succeeded"]
+      },
+      "actions": {
+        "Get_Completed_Items_For_Archive": {
+          "type": "ApiConnection",
+          "inputs": {
+            "host": {
+              "connection": {
+                "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+              }
+            },
+            "method": "get",
+            "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('projectListId')))}/items",
+            "queries": {
+              "$filter": "ProjectStatus eq 'Approved' and Modified lt '@{addDays(utcNow(), mul(parameters('archiveAfterDays'), -1))}'",
+              "$top": 100
+            }
+          }
+        },
+        "Archive_Each_Item": {
+          "type": "Foreach",
+          "foreach": "@outputs('Get_Completed_Items_For_Archive')?['body/value']",
+          "actions": {
+            "Create_Archive_Copy": {
+              "type": "ApiConnection",
+              "inputs": {
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                  }
+                },
+                "method": "post",
+                "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('archiveListId')))}/items",
+                "body": {
+                  "Title": "@{items('Archive_Each_Item')?['Title']}",
+                  "ProjectDescription": "@{items('Archive_Each_Item')?['ProjectDescription']}",
+                  "ProjectStatus": {
+                    "Value": "@{items('Archive_Each_Item')?['ProjectStatus']?['Value']}"
+                  },
+                  "ProjectPriority": {
+                    "Value": "@{items('Archive_Each_Item')?['ProjectPriority']?['Value']}"
+                  },
+                  "ProjectDueDate": "@{items('Archive_Each_Item')?['ProjectDueDate']}",
+                  "ProjectPercentComplete": "@{items('Archive_Each_Item')?['ProjectPercentComplete']}",
+                  "OriginalItemId": "@{items('Archive_Each_Item')?['ID']}",
+                  "OriginalCreated": "@{items('Archive_Each_Item')?['Created']}",
+                  "OriginalModified": "@{items('Archive_Each_Item')?['Modified']}",
+                  "ArchivedDate": "@{utcNow()}"
+                }
+              }
+            },
+            "Delete_Original_Item": {
+              "type": "ApiConnection",
+              "inputs": {
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                  }
+                },
+                "method": "delete",
+                "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('projectListId')))}/items/@{items('Archive_Each_Item')?['ID']}"
+              },
+              "runAfter": {
+                "Create_Archive_Copy": ["Succeeded"]
+              }
+            },
+            "Log_Archive_Action": {
+              "type": "AppendToArrayVariable",
+              "inputs": {
+                "name": "AuditEntries",
+                "value": {
+                  "action": "Archived",
+                  "itemId": "@{items('Archive_Each_Item')?['ID']}",
+                  "title": "@{items('Archive_Each_Item')?['Title']}",
+                  "timestamp": "@{utcNow()}"
+                }
+              },
+              "runAfter": {
+                "Delete_Original_Item": ["Succeeded"]
+              }
+            }
+          },
+          "runAfter": {
+            "Get_Completed_Items_For_Archive": ["Succeeded"]
+          },
+          "runtimeConfiguration": {
+            "concurrency": {
+              "repetitions": 5
+            }
+          }
+        }
+      }
+    },
+    "Phase_2_Send_Due_Date_Reminders": {
+      "type": "Scope",
+      "runAfter": {
+        "Phase_1_Archive_Completed_Items": ["Succeeded", "Failed"]
+      },
+      "actions": {
+        "Get_Items_Due_Tomorrow": {
+          "type": "ApiConnection",
+          "inputs": {
+            "host": {
+              "connection": {
+                "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+              }
+            },
+            "method": "get",
+            "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('projectListId')))}/items",
+            "queries": {
+              "$filter": "ProjectDueDate ge '@{formatDateTime(addDays(utcNow(), 1), 'yyyy-MM-ddT00:00:00Z')}' and ProjectDueDate lt '@{formatDateTime(addDays(utcNow(), 2), 'yyyy-MM-ddT00:00:00Z')}' and ProjectStatus ne 'Approved' and ProjectStatus ne 'Rejected'",
+              "$top": 100
+            }
+          }
+        },
+        "Send_Reminders": {
+          "type": "Foreach",
+          "foreach": "@outputs('Get_Items_Due_Tomorrow')?['body/value']",
+          "actions": {
+            "Send_Due_Date_Reminder": {
+              "type": "ApiConnection",
+              "inputs": {
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['office365']['connectionId']"
+                  }
+                },
+                "method": "post",
+                "path": "/v2/Mail",
+                "body": {
+                  "To": "@{items('Send_Reminders')?['ProjectAssignedTo']?['Email']}",
+                  "Subject": "Reminder: \"@{items('Send_Reminders')?['Title']}\" is due tomorrow",
+                  "Body": "<h2>Due Date Reminder</h2><p>The following project item is due <strong>tomorrow</strong>:</p><table border='1' cellpadding='8' style='border-collapse:collapse;font-family:Segoe UI,sans-serif'><tr><td><strong>Title</strong></td><td>@{items('Send_Reminders')?['Title']}</td></tr><tr><td><strong>Status</strong></td><td>@{items('Send_Reminders')?['ProjectStatus']?['Value']}</td></tr><tr><td><strong>Priority</strong></td><td>@{items('Send_Reminders')?['ProjectPriority']?['Value']}</td></tr><tr><td><strong>Due Date</strong></td><td>@{formatDateTime(items('Send_Reminders')?['ProjectDueDate'], 'MMMM dd, yyyy')}</td></tr><tr><td><strong>% Complete</strong></td><td>@{if(not(empty(items('Send_Reminders')?['ProjectPercentComplete'])), concat(string(mul(items('Send_Reminders')?['ProjectPercentComplete'], 100)), '%'), '0%')}</td></tr></table><p><a href='@{items('Send_Reminders')?['{Link}']}'>View Item</a></p>",
+                  "Importance": "High"
+                }
+              }
+            },
+            "Log_Reminder_Sent": {
+              "type": "AppendToArrayVariable",
+              "inputs": {
+                "name": "AuditEntries",
+                "value": {
+                  "action": "Reminder Sent",
+                  "itemId": "@{items('Send_Reminders')?['ID']}",
+                  "title": "@{items('Send_Reminders')?['Title']}",
+                  "recipient": "@{items('Send_Reminders')?['ProjectAssignedTo']?['Email']}",
+                  "timestamp": "@{utcNow()}"
+                }
+              },
+              "runAfter": {
+                "Send_Due_Date_Reminder": ["Succeeded"]
+              }
+            }
+          },
+          "runAfter": {
+            "Get_Items_Due_Tomorrow": ["Succeeded"]
+          },
+          "runtimeConfiguration": {
+            "concurrency": {
+              "repetitions": 10
+            }
+          }
+        }
+      }
+    },
+    "Phase_3_Mark_Overdue_Items": {
+      "type": "Scope",
+      "runAfter": {
+        "Phase_2_Send_Due_Date_Reminders": ["Succeeded", "Failed"]
+      },
+      "actions": {
+        "Get_Past_Due_Items": {
+          "type": "ApiConnection",
+          "inputs": {
+            "host": {
+              "connection": {
+                "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+              }
+            },
+            "method": "get",
+            "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('projectListId')))}/items",
+            "queries": {
+              "$filter": "ProjectDueDate lt '@{formatDateTime(utcNow(), 'yyyy-MM-ddT00:00:00Z')}' and ProjectStatus ne 'Approved' and ProjectStatus ne 'Rejected'",
+              "$top": 200
+            }
+          }
+        },
+        "Update_Overdue_Items": {
+          "type": "Foreach",
+          "foreach": "@outputs('Get_Past_Due_Items')?['body/value']",
+          "actions": {
+            "Update_Status_To_Overdue": {
+              "type": "ApiConnection",
+              "inputs": {
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                  }
+                },
+                "method": "patch",
+                "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('projectListId')))}/items/@{items('Update_Overdue_Items')?['ID']}",
+                "body": {
+                  "ProjectStatus": {
+                    "Value": "Under Review"
+                  }
+                }
+              }
+            },
+            "Send_Overdue_Notification": {
+              "type": "ApiConnection",
+              "inputs": {
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['office365']['connectionId']"
+                  }
+                },
+                "method": "post",
+                "path": "/v2/Mail",
+                "body": {
+                  "To": "@{items('Update_Overdue_Items')?['ProjectAssignedTo']?['Email']}",
+                  "Subject": "OVERDUE: \"@{items('Update_Overdue_Items')?['Title']}\" has passed its due date",
+                  "Body": "<h2 style='color:#d13438'>Overdue Notice</h2><p>The following project item is <strong>past its due date</strong> and has been flagged:</p><table border='1' cellpadding='8' style='border-collapse:collapse;font-family:Segoe UI,sans-serif'><tr><td><strong>Title</strong></td><td>@{items('Update_Overdue_Items')?['Title']}</td></tr><tr><td><strong>Previous Status</strong></td><td>@{items('Update_Overdue_Items')?['ProjectStatus']?['Value']}</td></tr><tr><td><strong>Due Date</strong></td><td>@{formatDateTime(items('Update_Overdue_Items')?['ProjectDueDate'], 'MMMM dd, yyyy')}</td></tr><tr><td><strong>Days Overdue</strong></td><td>@{div(sub(ticks(utcNow()), ticks(items('Update_Overdue_Items')?['ProjectDueDate'])), 864000000000)}</td></tr></table><p>Please update this item or contact your manager if you need an extension.</p><p><a href='@{items('Update_Overdue_Items')?['{Link}']}'>View Item</a></p>",
+                  "Importance": "High"
+                }
+              },
+              "runAfter": {
+                "Update_Status_To_Overdue": ["Succeeded"]
+              }
+            },
+            "Log_Overdue_Action": {
+              "type": "AppendToArrayVariable",
+              "inputs": {
+                "name": "AuditEntries",
+                "value": {
+                  "action": "Marked Overdue",
+                  "itemId": "@{items('Update_Overdue_Items')?['ID']}",
+                  "title": "@{items('Update_Overdue_Items')?['Title']}",
+                  "dueDate": "@{items('Update_Overdue_Items')?['ProjectDueDate']}",
+                  "timestamp": "@{utcNow()}"
+                }
+              },
+              "runAfter": {
+                "Send_Overdue_Notification": ["Succeeded"]
+              }
+            }
+          },
+          "runAfter": {
+            "Get_Past_Due_Items": ["Succeeded"]
+          },
+          "runtimeConfiguration": {
+            "concurrency": {
+              "repetitions": 5
+            }
+          }
+        }
+      }
+    },
+    "Write_Daily_Audit_Summary": {
+      "type": "ApiConnection",
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+          }
+        },
+        "method": "post",
+        "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('siteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('auditListId')))}/items",
+        "body": {
+          "Title": "Lifecycle Run - @{formatDateTime(utcNow(), 'yyyy-MM-dd HH:mm')}",
+          "RunDate": "@{utcNow()}",
+          "ArchivedCount": "@{length(filter(variables('AuditEntries'), item => item.action == 'Archived'))}",
+          "RemindersSent": "@{length(filter(variables('AuditEntries'), item => item.action == 'Reminder Sent'))}",
+          "OverdueMarked": "@{length(filter(variables('AuditEntries'), item => item.action == 'Marked Overdue'))}",
+          "TotalActions": "@{length(variables('AuditEntries'))}",
+          "Details": "@{string(variables('AuditEntries'))}",
+          "Status": "Completed"
+        }
+      },
+      "runAfter": {
+        "Phase_3_Mark_Overdue_Items": ["Succeeded", "Failed"]
+      }
+    }
+  }
+}

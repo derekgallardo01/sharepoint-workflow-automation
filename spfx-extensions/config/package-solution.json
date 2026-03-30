@@ -1,0 +1,52 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "sharepoint-workflow-extensions",
+    "id": "c4d92f1a-8e56-4b3c-a7d1-9f0e2c5b8a34",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "Workflow Automation Team",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.22.0"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "SPFx extensions for SharePoint workflow automation"
+      },
+      "longDescription": {
+        "default": "ListView Command Set for bulk actions and Field Customizer for status badges, designed for SharePoint list-based workflow management."
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "Bulk Actions Command Set",
+        "description": "Adds Bulk Approve, Export to CSV, and Assign To commands to list views.",
+        "id": "bf1e4ec6-92a7-4c3d-b579-dfb4ce402707",
+        "version": "1.0.0.0",
+        "componentIds": [
+          "bf1e4ec6-92a7-4c3d-b579-dfb4ce402707"
+        ]
+      },
+      {
+        "title": "Status Field Customizer",
+        "description": "Renders status column values as color-coded badges.",
+        "id": "a8e2c5d1-6b3f-4e7a-9c12-8d5f0e4b3a71",
+        "version": "1.0.0.0",
+        "componentIds": [
+          "a8e2c5d1-6b3f-4e7a-9c12-8d5f0e4b3a71"
+        ]
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/sharepoint-workflow-extensions.sppkg"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "bulk-actions-command-set": {
+      "components": [
+        {
+          "entrypoint": "./lib/extensions/bulkActions/BulkActionsCommandSet.js",
+          "manifest": "./src/extensions/bulkActions/BulkActionsCommandSet.manifest.json"
+        }
+      ]
+    },
+    "status-field-customizer": {
+      "components": [
+        {
+          "entrypoint": "./lib/extensions/statusField/StatusFieldCustomizer.js",
+          "manifest": "./src/extensions/statusField/StatusFieldCustomizer.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {}
+}

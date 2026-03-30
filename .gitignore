@@ -1,0 +1,38 @@
+# SPFx
+node_modules/
+lib/
+dist/
+temp/
+sharepoint/
+*.sppkg
+.vscode/
+*.js.map
+*.log
+npm-debug.log*
+
+# Build
+release/
+solution/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.code-workspace
+
+# PowerShell
+*.psm1.bak
+
+# Environment
+.env
+.env.local
+*.pfx
+*.cer
