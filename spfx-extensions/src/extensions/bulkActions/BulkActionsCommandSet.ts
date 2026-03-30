@@ -115,7 +115,7 @@ export default class BulkActionsCommandSet extends BaseListViewCommandSet<IBulkA
     }
 
     try {
-      const listId = this.context.listView.list.id.toString();
+      const listId = this.context.listView.list.guid.toString();
       const [batchedSP, execute] = this._sp.batched();
       const list = batchedSP.web.lists.getById(listId);
 
@@ -224,7 +224,7 @@ export default class BulkActionsCommandSet extends BaseListViewCommandSet<IBulkA
       };
 
       const onAssign = async (userId: number): Promise<void> => {
-        const listId = this.context.listView.list.id.toString();
+        const listId = this.context.listView.list.guid.toString();
         const [batchedSP, execute] = this._sp.batched();
         const list = batchedSP.web.lists.getById(listId);
 
