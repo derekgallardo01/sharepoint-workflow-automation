@@ -75,6 +75,33 @@ graph TD
 
 > Full architecture diagram with styling: [`docs/diagrams/architecture.md`](docs/diagrams/architecture.md)
 
+### Service Layer
+
+```mermaid
+graph LR
+    subgraph SPFx["SPFx Extensions"]
+        CMD["BulkActionsCommandSet"]
+        FLD["StatusFieldCustomizer"]
+    end
+
+    subgraph Services["Service Layer"]
+        BOS["BatchOperationService<br/>─────────────<br/>Batch processor<br/>Retry with backoff<br/>Cancellation support<br/>Audit logging"]
+        STS["StatusTransitionService<br/>─────────────<br/>State machine<br/>Guard conditions<br/>Side effects<br/>Transition audit"]
+        VAL["ListItemValidator<br/>─────────────<br/>Schema validation<br/>Built-in validators<br/>Custom rules<br/>Batch validation"]
+    end
+
+    CMD --> BOS
+    CMD --> VAL
+    FLD --> STS
+    BOS -->|"Batched $batch<br/>requests"| SP["SharePoint REST API"]
+    STS -->|"Validates<br/>transitions"| SP
+    VAL -->|"Pre-flight<br/>validation"| BOS
+
+    style Services fill:#f0f9ff,stroke:#0078d4,color:#003d6b
+    style SPFx fill:#f3e8fd,stroke:#6b69d6,color:#2d2b6b
+    style SP fill:#fff4e8,stroke:#d83b01,color:#6b2d00
+```
+
 ## Features
 
 ### SPFx Extensions
@@ -173,6 +200,7 @@ Interactive HTML mockups of the solution UI. Open each file in a browser to view
 
 | Mockup | File | Description |
 |--------|------|-------------|
+| **Hero: Full Solution** | [`docs/screenshots/hero-workflow.html`](docs/screenshots/hero-workflow.html) | Split-view hero screenshot: SharePoint list with bulk actions + Power Automate flow running + Teams approval card. Dark theme with animations. |
 | Project Tracker List | [`docs/screenshots/project-tracker.html`](docs/screenshots/project-tracker.html) | Full SharePoint list view with status badges, priority indicators, progress bars, and grouped-by-status layout |
 | Bulk Actions | [`docs/screenshots/bulk-actions.html`](docs/screenshots/bulk-actions.html) | Multi-select with bulk approve toolbar, loading overlay, and success toast notification |
 | Assign Panel | [`docs/screenshots/assign-panel.html`](docs/screenshots/assign-panel.html) | Fluent UI side panel with people picker, person suggestions, and assignment processing |
@@ -286,6 +314,90 @@ This produces `sharepoint/solution/sharepoint-workflow-extensions.sppkg`.
 | BulkActionsCommandSet | ListView Command Set | Bulk Approve, Export (CSV/Excel/JSON with column selection), Assign To, Progress Panel |
 | StatusFieldCustomizer | Field Customizer | Color-coded badges for Not Started, In Progress, Under Review, Approved, Rejected |
 
+## Architecture Decision Records
+
+Key architectural decisions are documented as ADRs in [`docs/adr/`](docs/adr/):
+
+| ADR | Decision | Status |
+|-----|----------|--------|
+| [001](docs/adr/001-command-set-over-custom-page.md) | Use SPFx Command Set over custom application page for bulk actions | Accepted |
+| [002](docs/adr/002-pnp-batching-strategy.md) | Use PnP batched operations for bulk updates (N calls to 1) | Accepted |
+| [003](docs/adr/003-flow-escalation-pattern.md) | Parallel branch escalation pattern for approval flows | Accepted |
+
+## Advanced Patterns
+
+### Batch Processing Service
+
+`spfx-extensions/src/extensions/bulkActions/services/BatchOperationService.ts`
+
+A generic batch processor for SharePoint list item operations with enterprise-grade reliability:
+
+- **Generic API**: `batchProcess<T>(items, processor, options, onProgress)` works with any item type
+- **Configurable concurrency**: Process up to N batches in parallel (default: 5)
+- **Exponential backoff retry**: Failed items automatically retry up to 3 times with increasing delays
+- **Cancellation support**: Pass an `AbortSignal` to cancel mid-operation
+- **SharePoint throttling**: Detects HTTP 429 responses and respects `Retry-After` headers
+- **Progress callbacks**: Real-time progress with per-item status (Pending, Processing, Succeeded, Failed, Retrying, Cancelled)
+- **Audit logging**: Generates audit entries for every item operation, persistable to the Workflow Audit Log list
+- **Retry failed**: `retryFailed()` method re-processes only the items that failed in a previous batch
+
+### Status Transition State Machine
+
+`spfx-extensions/src/extensions/statusField/services/StatusTransitionService.ts`
+
+A type-safe state machine that governs all status field transitions:
+
+- **Defined transitions**: Not Started -> In Progress -> Under Review -> Approved/Rejected, with On Hold and Cancelled branches
+- **Guard conditions**: Custom async validators that can block a transition (e.g., "all subtasks must be complete")
+- **Side effects**: Register async actions triggered on transition (send notification, update related list, log audit entry)
+- **Role-based access**: Restrict transitions to specific roles (e.g., only Approvers can move to Approved)
+- **Reason requirements**: Force users to provide justification for certain transitions (e.g., Rejection requires a reason)
+- **Audit trail**: Full history of every transition with timestamps, actors, and side effect outcomes
+
+### Data Validation Layer
+
+`spfx-extensions/src/extensions/bulkActions/validators/ListItemValidator.ts`
+
+Schema-based validation framework for list items, run before any bulk operation:
+
+- **Schema per content type**: Register validation rules for ProjectItem, ApprovalItem, ChangeRequest, etc.
+- **Built-in validators**: `required`, `maxLength`, `minLength`, `dateRange`, `choiceValues`, `personExists`, `numberRange`, `pattern`
+- **Custom validators**: `Validators.custom()` for arbitrary business logic
+- **Batch validation**: `validateBatch()` validates all selected items and separates valid/invalid before processing
+- **Typed results**: `ValidationResult` with field-level errors and warnings, severity levels, and the rule that triggered each issue
+
+## Monitoring
+
+### Flow Health Dashboard
+
+`provisioning/Monitor-FlowHealth.ps1`
+
+PowerShell script that monitors all Power Automate flow runs and generates an HTML health dashboard:
+
+```powershell
+# Check flow health for the last 7 days
+.\provisioning\Monitor-FlowHealth.ps1 `
+    -EnvironmentId "a1b2c3d4-e5f6-7890-abcd-ef1234567890" `
+    -Days 7
+
+# Generate report for specific flows, email results
+.\provisioning\Monitor-FlowHealth.ps1 `
+    -EnvironmentId $envId `
+    -Days 30 `
+    -FlowFilter "Workflow*" `
+    -OutputPath "C:\Reports\flow-health.html" `
+    -SendEmail -SmtpServer "smtp.contoso.com" `
+    -EmailTo "ops@contoso.com" -EmailFrom "monitor@contoso.com"
+```
+
+**Dashboard features:**
+- Per-flow success rate with color-coded health status (Healthy >= 95%, Warning >= 80%, Critical < 80%)
+- Failed run details with error messages
+- Stale flow detection (no runs in 3+ days)
+- Summary metrics: total runs, success rate, healthy/warning/critical/stale counts
+- Self-contained HTML output with dark theme
+- Optional email delivery with high-priority flag for critical flows
+
 ## Project Structure
 
 ```
@@ -295,10 +407,16 @@ sharepoint-workflow-automation/
 │   ├── src/extensions/
 │   │   ├── bulkActions/           # ListView Command Set
 │   │   │   ├── components/        # React components (AssignPanel, ExportDialog, ProgressPanel)
+│   │   │   ├── services/
+│   │   │   │   └── BatchOperationService.ts   # Batch processor with retry, cancellation, audit
+│   │   │   ├── validators/
+│   │   │   │   └── ListItemValidator.ts       # Schema-based validation framework
 │   │   │   ├── BulkActionsCommandSet.ts
 │   │   │   └── BulkActionsCommandSet.manifest.json
 │   │   └── statusField/           # Field Customizer
 │   │       ├── components/        # React components (StatusBadge)
+│   │       ├── services/
+│   │       │   └── StatusTransitionService.ts  # State machine for status transitions
 │   │       ├── StatusFieldCustomizer.ts
 │   │       └── StatusFieldCustomizer.manifest.json
 │   ├── package.json
@@ -318,12 +436,17 @@ sharepoint-workflow-automation/
 │   ├── lifecycle-management.json
 │   ├── teams-adaptive-card-approval.json  # Teams Adaptive Card approval flow
 │   └── README.md
-├── provisioning/                  # Deployment scripts
+├── provisioning/                  # Deployment & operations scripts
 │   ├── Deploy-WorkflowSolution.ps1
 │   ├── Remove-WorkflowSolution.ps1
 │   ├── Set-ListPermissions.ps1
-│   └── New-SiteFromTemplate.ps1   # Site provisioning from PnP template
+│   ├── New-SiteFromTemplate.ps1   # Site provisioning from PnP template
+│   └── Monitor-FlowHealth.ps1    # Flow health monitoring + HTML dashboard
 ├── docs/
+│   ├── adr/                       # Architecture Decision Records
+│   │   ├── 001-command-set-over-custom-page.md
+│   │   ├── 002-pnp-batching-strategy.md
+│   │   └── 003-flow-escalation-pattern.md
 │   ├── diagrams/                  # Architecture & component diagrams
 │   │   ├── architecture.md
 │   │   └── status-badges.md
@@ -333,6 +456,7 @@ sharepoint-workflow-automation/
 │   │   ├── cross-list-sync.md
 │   │   └── lifecycle-management.md
 │   └── screenshots/               # HTML mockup screenshots
+│       ├── hero-workflow.html     # Full solution hero screenshot (animated)
 │       ├── project-tracker.html
 │       ├── bulk-actions.html
 │       ├── assign-panel.html
@@ -365,6 +489,15 @@ See **[CONTRIBUTING.md](CONTRIBUTING.md)** for prerequisites, setup instructions
 ---
 
 ## Changelog
+
+### v1.3.0
+
+- Added `BatchOperationService.ts` -- generic batch processor with configurable concurrency, exponential backoff retry, cancellation token (AbortSignal), SharePoint throttling detection, and audit log generation
+- Added `StatusTransitionService.ts` -- type-safe state machine for status transitions with guard conditions, side effects, role-based access, reason requirements, and full audit trail
+- Added `ListItemValidator.ts` -- schema-based validation framework with built-in validators (required, maxLength, dateRange, choiceValues, personExists, numberRange, pattern) and batch validation
+- Added `Monitor-FlowHealth.ps1` -- Power Automate flow health monitoring script with per-flow success rates, failed run details, stale flow detection, and self-contained HTML dashboard output with optional email delivery
+- Added Architecture Decision Records: ADR-001 (Command Set over custom page), ADR-002 (PnP batching strategy), ADR-003 (parallel branch escalation pattern)
+- Added `hero-workflow.html` -- animated hero screenshot with split-view layout showing SharePoint list, Power Automate flow run, Teams approval card, and batch progress panel
 
 ### v1.2.0
 

@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SharePoint Workflow Automation - Hero Screenshot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0e1a;
+            color: #e2e8f0;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Animated background gradient */
+        .bg-mesh {
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 10% 20%, rgba(56, 189, 248, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse 60% 80% at 80% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse 50% 50% at 50% 50%, rgba(16, 124, 16, 0.04) 0%, transparent 60%);
+            z-index: 0;
+        }
+
+        /* Glassmorphism card base */
+        .glass {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 12px;
+        }
+
+        .glass-bright {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 10px;
+        }
+
+        /* Status badge styles */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+        }
+
+        .badge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .badge-approved { background: rgba(16, 124, 16, 0.15); color: #4ade80; }
+        .badge-approved .badge-dot { background: #4ade80; }
+
+        .badge-in-progress { background: rgba(0, 120, 212, 0.15); color: #60a5fa; }
+        .badge-in-progress .badge-dot { background: #60a5fa; }
+
+        .badge-review { background: rgba(216, 59, 1, 0.15); color: #fb923c; }
+        .badge-review .badge-dot { background: #fb923c; }
+
+        .badge-rejected { background: rgba(168, 0, 0, 0.15); color: #f87171; }
+        .badge-rejected .badge-dot { background: #f87171; }
+
+        .badge-not-started { background: rgba(128, 128, 128, 0.15); color: #94a3b8; }
+        .badge-not-started .badge-dot { background: #94a3b8; }
+
+        .badge-pending { background: rgba(234, 179, 8, 0.15); color: #facc15; }
+        .badge-pending .badge-dot { background: #facc15; }
+
+        /* Pulsing animation for changing badges */
+        @keyframes badgePulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.08); opacity: 0.85; }
+        }
+
+        .badge-pulse {
+            animation: badgePulse 2s ease-in-out infinite;
+        }
+
+        /* Progress bar animation */
+        @keyframes progressFill {
+            from { width: 0%; }
+        }
+
+        .progress-bar {
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(148, 163, 184, 0.1);
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            animation: progressFill 3s ease-out forwards;
+        }
+
+        /* Flow step animations */
+        @keyframes flowStepIn {
+            from { opacity: 0; transform: translateX(-12px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .flow-step {
+            animation: flowStepIn 0.5s ease-out forwards;
+            opacity: 0;
+        }
+
+        .flow-step:nth-child(1) { animation-delay: 0.3s; }
+        .flow-step:nth-child(2) { animation-delay: 0.8s; }
+        .flow-step:nth-child(3) { animation-delay: 1.3s; }
+        .flow-step:nth-child(4) { animation-delay: 1.8s; }
+        .flow-step:nth-child(5) { animation-delay: 2.3s; }
+        .flow-step:nth-child(6) { animation-delay: 2.8s; }
+
+        /* Step connector line animation */
+        @keyframes lineGrow {
+            from { height: 0; }
+            to { height: 100%; }
+        }
+
+        .step-line {
+            width: 2px;
+            background: linear-gradient(to bottom, #3b82f6, rgba(59, 130, 246, 0.2));
+            position: absolute;
+            left: 15px;
+            top: 32px;
+            bottom: 0;
+            transform-origin: top;
+        }
+
+        .step-line-animated {
+            animation: lineGrow 0.4s ease-out forwards;
+        }
+
+        /* Check icon animation */
+        @keyframes checkIn {
+            from { transform: scale(0) rotate(-45deg); opacity: 0; }
+            to { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        .check-icon {
+            animation: checkIn 0.3s ease-out forwards;
+        }
+
+        /* Spinning loader */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(96, 165, 250, 0.2);
+            border-top-color: #60a5fa;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* Toast notification slide-in */
+        @keyframes toastSlideIn {
+            from { transform: translateX(120%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .toast {
+            animation: toastSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation-delay: 4s;
+            opacity: 0;
+        }
+
+        /* Selection count animation */
+        @keyframes countPop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.25); }
+            100% { transform: scale(1); }
+        }
+
+        .count-pop {
+            animation: countPop 0.4s ease-out;
+            animation-delay: 0.5s;
+        }
+
+        /* Row selection highlight */
+        .row-selected {
+            background: rgba(59, 130, 246, 0.08) !important;
+            border-left: 2px solid #3b82f6;
+        }
+
+        /* Table styling */
+        .list-table { width: 100%; border-collapse: collapse; }
+        .list-table th {
+            text-align: left;
+            padding: 8px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+        }
+        .list-table td {
+            padding: 10px 12px;
+            font-size: 12.5px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.04);
+            color: #cbd5e1;
+        }
+        .list-table tr:hover {
+            background: rgba(148, 163, 184, 0.03);
+        }
+
+        /* Checkbox styling */
+        .sp-checkbox {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            border: 1.5px solid #475569;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .sp-checkbox.checked {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+
+        /* Avatar */
+        .avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        /* Teams card styling */
+        .teams-card {
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: 8px;
+            border-left: 4px solid #6366f1;
+        }
+
+        /* Toolbar button hover */
+        .toolbar-btn {
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+
+        .toolbar-btn:hover {
+            background: rgba(59, 130, 246, 0.15);
+        }
+
+        .toolbar-btn-primary {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.25);
+        }
+
+        /* Section header */
+        .section-label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #475569;
+        }
+
+        /* Subtle inner glow on glass cards */
+        .glow-blue { box-shadow: inset 0 1px 0 rgba(59, 130, 246, 0.1), 0 0 40px rgba(59, 130, 246, 0.03); }
+        .glow-purple { box-shadow: inset 0 1px 0 rgba(139, 92, 246, 0.1), 0 0 40px rgba(139, 92, 246, 0.03); }
+        .glow-indigo { box-shadow: inset 0 1px 0 rgba(99, 102, 241, 0.1), 0 0 40px rgba(99, 102, 241, 0.03); }
+
+        /* Fade in for the whole page */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        .fade-in-delayed {
+            animation: fadeInUp 0.6s ease-out forwards;
+            animation-delay: 0.2s;
+            opacity: 0;
+        }
+
+        .fade-in-delayed-2 {
+            animation: fadeInUp 0.6s ease-out forwards;
+            animation-delay: 0.4s;
+            opacity: 0;
+        }
+
+        /* Shimmer effect on active processing */
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+
+        .shimmer-text {
+            background: linear-gradient(90deg, #60a5fa 0%, #a78bfa 30%, #60a5fa 60%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s linear infinite;
+        }
+
+        /* Live dot pulse */
+        @keyframes livePulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.6); }
+            50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
+        }
+
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: livePulse 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-mesh"></div>
+
+    <!-- Main layout container -->
+    <div style="position: relative; z-index: 1; height: 100vh; display: grid; grid-template-rows: auto 1fr auto; gap: 12px; padding: 16px 20px;">
+
+        <!-- Top bar: Title + live indicator -->
+        <div class="flex items-center justify-between fade-in" style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                        <rect width="28" height="28" rx="6" fill="url(#logo-grad)"/>
+                        <path d="M8 14l4 4 8-8" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <defs>
+                            <linearGradient id="logo-grad" x1="0" y1="0" x2="28" y2="28">
+                                <stop stop-color="#3b82f6"/>
+                                <stop offset="1" stop-color="#8b5cf6"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span style="font-size: 15px; font-weight: 700; color: #f1f5f9;">Workflow Automation</span>
+                </div>
+                <span style="font-size: 11px; color: #475569; padding-left: 12px; border-left: 1px solid rgba(148,163,184,0.12);">SharePoint Online + Power Automate + SPFx</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <div class="live-dot"></div>
+                    <span style="font-size: 11px; color: #4ade80; font-weight: 500;">Live</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 11px; color: #64748b;">Success Rate</span>
+                    <span style="font-size: 12px; font-weight: 600; color: #4ade80;">98.7%</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 11px; color: #64748b;">Today</span>
+                    <span style="font-size: 12px; font-weight: 600; color: #e2e8f0;">142 runs</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main split view: SharePoint List (left) + Power Automate Flow (right) -->
+        <div style="display: grid; grid-template-columns: 1fr 380px; gap: 12px; min-height: 0;">
+
+            <!-- LEFT: SharePoint List View -->
+            <div class="glass glow-blue fade-in" style="display: flex; flex-direction: column; overflow: hidden;">
+                <!-- List header -->
+                <div style="padding: 12px 16px; border-bottom: 1px solid rgba(148, 163, 184, 0.06); display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                            <rect x="1" y="1" width="7" height="7" rx="1.5" stroke="#60a5fa" stroke-width="1.5"/>
+                            <rect x="10" y="1" width="7" height="7" rx="1.5" stroke="#60a5fa" stroke-width="1.5"/>
+                            <rect x="1" y="10" width="7" height="7" rx="1.5" stroke="#60a5fa" stroke-width="1.5"/>
+                            <rect x="10" y="10" width="7" height="7" rx="1.5" stroke="#60a5fa" stroke-width="1.5"/>
+                        </svg>
+                        <span style="font-size: 13px; font-weight: 600; color: #f1f5f9;">Project Tracker</span>
+                        <span style="font-size: 11px; color: #475569;">All Items (24)</span>
+                    </div>
+
+                    <!-- Bulk Actions Toolbar (Active) -->
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <!-- Selection count badge -->
+                        <div class="count-pop" style="display: flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 6px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2);">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <rect x="1" y="1" width="12" height="12" rx="2" stroke="#60a5fa" stroke-width="1.5"/>
+                                <path d="M4 7l2 2 4-4" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span style="font-size: 12px; font-weight: 600; color: #60a5fa;">4 selected</span>
+                        </div>
+
+                        <div class="toolbar-btn toolbar-btn-primary" style="display: flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path d="M3 7l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Bulk Approve
+                        </div>
+                        <div class="toolbar-btn" style="display: flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; color: #94a3b8;">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path d="M2 9l3 3 0-3zM12 2H5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M12 5H7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                                <path d="M12 8H9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                            </svg>
+                            Export
+                        </div>
+                        <div class="toolbar-btn" style="display: flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; color: #94a3b8;">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <circle cx="7" cy="5" r="2.5" stroke="currentColor" stroke-width="1.4"/>
+                                <path d="M2 13c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                            </svg>
+                            Assign
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div style="flex: 1; overflow: auto; padding: 0;">
+                    <table class="list-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 36px; padding-left: 16px;"></th>
+                                <th>Title</th>
+                                <th>Status</th>
+                                <th>Priority</th>
+                                <th>Assigned To</th>
+                                <th>Due Date</th>
+                                <th style="width: 100px;">Progress</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Row 1 - Selected -->
+                            <tr class="row-selected">
+                                <td style="padding-left: 16px;">
+                                    <div class="sp-checkbox checked">
+                                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                            <path d="M2 5l2.5 2.5L8 3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                    </div>
+                                </td>
+                                <td style="font-weight: 500; color: #f1f5f9;">Q1 Budget Proposal</td>
+                                <td><span class="badge badge-review badge-pulse"><span class="badge-dot"></span>Under Review</span></td>
+                                <td><span style="color: #f87171; font-weight: 500; font-size: 11px;">High</span></td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <div class="avatar" style="background: #6366f1;">SM</div>
+                                        <span>Sarah Miller</span>
+                                    </div>
+                                </td>
+                                <td style="color: #94a3b8;">Mar 15, 2026</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <div class="progress-bar" style="flex: 1;"><div class="progress-fill" style="width: 75%;"></div></div>
+                                        <span style="font-size: 11px; color: #64748b;">75%</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Row 2 - Selected -->
+                            <tr class="row-selected">
+                                <td style="padding-left: 16px;">
+                                    <div class="sp-checkbox checked">
+                                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                            <path d="M2 5l2.5 2.5L8 3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                    </div>
+                                </td>
+                                <td style="font-weight: 500; color: #f1f5f9;">Infrastructure Upgrade Plan</td>
+                                <td><span class="badge badge-review badge-pulse"><span class="badge-dot"></span>Under Review</span></td>
+                                <td><span style="color: #fb923c; font-weight: 500; font-size: 11px;">Medium</span></td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <div class="avatar" style="background: #0ea5e9;">JC</div>
+                                        <span>James Chen</span>
+                                    </div>
+                                </td>
+                                <td style="color: #94a3b8;">Mar 22, 2026</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <div class="progress-bar" style="flex: 1;"><div class="progress-fill" style="width: 60%; animation-delay: 0.3s;"></div></div>
+                                        <span style="font-size: 11px; color: #64748b;">60%</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Row 3 - Selected -->
+                            <tr class="row-selected">
+                                <td style="padding-left: 16px;">
+                                    <div class="sp-checkbox checked">
+                                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                            <path d="M2 5l2.5 2.5L8 3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                    </div>
+                                </td>
+                                <td style="font-weight: 500; color: #f1f5f9;">Vendor Compliance Audit</td>
+                                <td><span class="badge badge-in-progress"><span class="badge-dot"></span>In Progress</span></td>
+                                <td><span style="color: #f87171; font-weight: 500; font-size: 11px;">High</span></td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <div class="avatar" style="background: #f59e0b;">AL</div>
+                                        <span>Amy Liu</span>
+                                    </div>
+                                </td>
+                                <td style="color: #94a3b8;">Apr 01, 2026</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <div class="progress-bar" style="flex: 1;"><div class="progress-fill" style="width: 40%; animation-delay: 0.6s;"></div></div>
+                                        <span style="font-size: 11px; color: #64748b;">40%</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Row 4 - Selected -->
+                            <tr class="row-selected">
+                                <td style="padding-left: 16px;">
+                                    <div class="sp-checkbox checked">
+                                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                            <path d="M2 5l2.5 2.5L8 3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                    </div>
+                                </td>
+                                <td style="font-weight: 500; color: #f1f5f9;">Employee Benefits Renewal</td>
+                                <td><span class="badge badge-pending badge-pulse"><span class="badge-dot"></span>Pending</span></td>
+                                <td><span style="color: #fb923c; font-weight: 500; font-size: 11px;">Medium</span></td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <div class="avatar" style="background: #10b981;">RK</div>
+                                        <span>Raj Kumar</span>
+                                    </div>
+                                </td>
+                                <td style="color: #94a3b8;">Mar 28, 2026</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <div class="progress-bar" style="flex: 1;"><div class="progress-fill" style="width: 55%; animation-delay: 0.9s;"></div></div>
+                                        <span style="font-size: 11px; color: #64748b;">55%</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Row 5 - Not selected -->
+                            <tr>
+                                <td style="padding-left: 16px;"><div class="sp-checkbox"></div></td>
+                                <td style="font-weight: 500; color: #f1f5f9;">Office 365 Migration</td>
+                                <td><span class="badge badge-approved"><span class="badge-dot"></span>Approved</span></td>
+                                <td><span style="color: #f87171; font-weight: 500; font-size: 11px;">High</span></td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <div class="avatar" style="background: #ec4899;">DW</div>
+                                        <span>Diana Wells</span>
+                                    </div>
+                                </td>
+                                <td style="color: #94a3b8;">Feb 28, 2026</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <div class="progress-bar" style="flex: 1;"><div class="progress-fill" style="width: 100%; animation-delay: 1.2s;"></div></div>
+                                        <span style="font-size: 11px; color: #64748b;">100%</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Row 6 -->
+                            <tr>
+                                <td style="padding-left: 16px;"><div class="sp-checkbox"></div></td>
+                                <td style="font-weight: 500; color: #f1f5f9;">Security Policy Update</td>
+                                <td><span class="badge badge-in-progress"><span class="badge-dot"></span>In Progress</span></td>
+                                <td><span style="color: #fb923c; font-weight: 500; font-size: 11px;">Medium</span></td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <div class="avatar" style="background: #8b5cf6;">TN</div>
+                                        <span>Tom Nguyen</span>
+                                    </div>
+                                </td>
+                                <td style="color: #94a3b8;">Apr 10, 2026</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <div class="progress-bar" style="flex: 1;"><div class="progress-fill" style="width: 30%; animation-delay: 1.5s;"></div></div>
+                                        <span style="font-size: 11px; color: #64748b;">30%</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Row 7 -->
+                            <tr>
+                                <td style="padding-left: 16px;"><div class="sp-checkbox"></div></td>
+                                <td style="font-weight: 500; color: #f1f5f9;">New Hire Onboarding Portal</td>
+                                <td><span class="badge badge-not-started"><span class="badge-dot"></span>Not Started</span></td>
+                                <td><span style="color: #94a3b8; font-weight: 500; font-size: 11px;">Low</span></td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <div class="avatar" style="background: #64748b;">MP</div>
+                                        <span>Maria Park</span>
+                                    </div>
+                                </td>
+                                <td style="color: #94a3b8;">Apr 30, 2026</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <div class="progress-bar" style="flex: 1;"><div class="progress-fill" style="width: 0%;"></div></div>
+                                        <span style="font-size: 11px; color: #64748b;">0%</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Row 8 -->
+                            <tr>
+                                <td style="padding-left: 16px;"><div class="sp-checkbox"></div></td>
+                                <td style="font-weight: 500; color: #f1f5f9;">Data Center Consolidation</td>
+                                <td><span class="badge badge-rejected"><span class="badge-dot"></span>Rejected</span></td>
+                                <td><span style="color: #f87171; font-weight: 500; font-size: 11px;">High</span></td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <div class="avatar" style="background: #ef4444;">BT</div>
+                                        <span>Brian Torres</span>
+                                    </div>
+                                </td>
+                                <td style="color: #94a3b8;">Mar 10, 2026</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <div class="progress-bar" style="flex: 1;"><div class="progress-fill" style="width: 85%; animation-delay: 1.8s;"></div></div>
+                                        <span style="font-size: 11px; color: #64748b;">85%</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- RIGHT: Power Automate Flow Run -->
+            <div class="glass glow-purple fade-in-delayed" style="display: flex; flex-direction: column; overflow: hidden;">
+                <!-- Flow header -->
+                <div style="padding: 12px 16px; border-bottom: 1px solid rgba(148, 163, 184, 0.06);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                                <path d="M3 9h4l2-5 3 10 2-5h4" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span style="font-size: 13px; font-weight: 600; color: #f1f5f9;">Multi-Stage Approval</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                            <div class="spinner"></div>
+                            <span style="font-size: 11px; color: #60a5fa;">Running</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 11px; color: #64748b;">Triggered 2m ago</span>
+                        <span style="font-size: 11px; color: #64748b;">Run ID: <span style="color: #94a3b8; font-family: monospace;">a8f2e1d4</span></span>
+                    </div>
+                </div>
+
+                <!-- Flow steps -->
+                <div style="flex: 1; overflow: auto; padding: 16px;">
+                    <div style="position: relative;">
+                        <!-- Step 1: Trigger -->
+                        <div class="flow-step" style="display: flex; gap: 12px; margin-bottom: 20px; position: relative;">
+                            <div style="position: relative; z-index: 1;">
+                                <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 124, 16, 0.15); border: 1px solid rgba(74, 222, 128, 0.2); display: flex; align-items: center; justify-content: center;">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" class="check-icon">
+                                        <path d="M3 7l3 3 5-5" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                                <div class="step-line step-line-animated" style="height: 20px;"></div>
+                            </div>
+                            <div style="flex: 1; padding-top: 2px;">
+                                <div style="font-size: 12px; font-weight: 600; color: #f1f5f9; margin-bottom: 2px;">When an item is created or modified</div>
+                                <div style="font-size: 11px; color: #64748b;">SharePoint -- Document Approval Queue</div>
+                                <div class="glass-bright" style="margin-top: 6px; padding: 6px 10px; font-size: 10px; color: #94a3b8;">
+                                    Item: "Q1 Budget Proposal" &bull; Status changed to Pending
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Get Manager -->
+                        <div class="flow-step" style="display: flex; gap: 12px; margin-bottom: 20px; position: relative;">
+                            <div style="position: relative; z-index: 1;">
+                                <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 124, 16, 0.15); border: 1px solid rgba(74, 222, 128, 0.2); display: flex; align-items: center; justify-content: center;">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" class="check-icon">
+                                        <path d="M3 7l3 3 5-5" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                                <div class="step-line step-line-animated" style="height: 20px;"></div>
+                            </div>
+                            <div style="flex: 1; padding-top: 2px;">
+                                <div style="font-size: 12px; font-weight: 600; color: #f1f5f9; margin-bottom: 2px;">Get submitter's manager</div>
+                                <div style="font-size: 11px; color: #64748b;">Office 365 Users -- Get Manager (V2)</div>
+                                <div class="glass-bright" style="margin-top: 6px; padding: 6px 10px; font-size: 10px; color: #94a3b8;">
+                                    Manager: David Park (d.park@contoso.com)
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Manager Approval -->
+                        <div class="flow-step" style="display: flex; gap: 12px; margin-bottom: 20px; position: relative;">
+                            <div style="position: relative; z-index: 1;">
+                                <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 124, 16, 0.15); border: 1px solid rgba(74, 222, 128, 0.2); display: flex; align-items: center; justify-content: center;">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" class="check-icon">
+                                        <path d="M3 7l3 3 5-5" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                                <div class="step-line step-line-animated" style="height: 20px;"></div>
+                            </div>
+                            <div style="flex: 1; padding-top: 2px;">
+                                <div style="font-size: 12px; font-weight: 600; color: #f1f5f9; margin-bottom: 2px;">Stage 1: Manager Approval</div>
+                                <div style="font-size: 11px; color: #64748b;">Approvals -- Start and wait for an approval</div>
+                                <div class="glass-bright" style="margin-top: 6px; padding: 6px 10px; font-size: 10px; display: flex; align-items: center; gap: 8px;">
+                                    <span class="badge badge-approved" style="font-size: 10px;"><span class="badge-dot"></span>Approved</span>
+                                    <span style="color: #64748b;">by David Park -- 14 min</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 4: Get Dept Head -->
+                        <div class="flow-step" style="display: flex; gap: 12px; margin-bottom: 20px; position: relative;">
+                            <div style="position: relative; z-index: 1;">
+                                <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 124, 16, 0.15); border: 1px solid rgba(74, 222, 128, 0.2); display: flex; align-items: center; justify-content: center;">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" class="check-icon">
+                                        <path d="M3 7l3 3 5-5" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                                <div class="step-line step-line-animated" style="height: 20px;"></div>
+                            </div>
+                            <div style="flex: 1; padding-top: 2px;">
+                                <div style="font-size: 12px; font-weight: 600; color: #f1f5f9; margin-bottom: 2px;">Get Department Head</div>
+                                <div style="font-size: 11px; color: #64748b;">SharePoint -- Get items (Dept Heads list)</div>
+                                <div class="glass-bright" style="margin-top: 6px; padding: 6px 10px; font-size: 10px; color: #94a3b8;">
+                                    Dept Head: Lisa Wong (l.wong@contoso.com)
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 5: Dept Head Approval (Running) -->
+                        <div class="flow-step" style="display: flex; gap: 12px; margin-bottom: 20px; position: relative;">
+                            <div style="position: relative; z-index: 1;">
+                                <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(96, 165, 250, 0.25); display: flex; align-items: center; justify-content: center;">
+                                    <div class="spinner" style="width: 13px; height: 13px;"></div>
+                                </div>
+                                <div class="step-line" style="height: 20px; background: linear-gradient(to bottom, rgba(59, 130, 246, 0.3), transparent);"></div>
+                            </div>
+                            <div style="flex: 1; padding-top: 2px;">
+                                <div style="font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                                    <span class="shimmer-text">Stage 2: Department Head Approval</span>
+                                </div>
+                                <div style="font-size: 11px; color: #64748b;">Approvals -- Start and wait for an approval</div>
+                                <div class="glass-bright" style="margin-top: 6px; padding: 6px 10px; font-size: 10px; color: #94a3b8; display: flex; align-items: center; gap: 6px;">
+                                    <div class="spinner" style="width: 10px; height: 10px; border-width: 1.5px;"></div>
+                                    <span>Waiting for Lisa Wong's response...</span>
+                                </div>
+                                <!-- Escalation timer -->
+                                <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 10px; color: #64748b;">Reminder in 2d 22h</span>
+                                    <div class="progress-bar" style="flex: 1; max-width: 80px;">
+                                        <div class="progress-fill" style="width: 5%; background: linear-gradient(90deg, #f59e0b, #d97706);"></div>
+                                    </div>
+                                    <span style="font-size: 10px; color: #64748b;">Escalation in 4d 22h</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 6: Update Item (Pending) -->
+                        <div class="flow-step" style="display: flex; gap: 12px; position: relative;">
+                            <div style="position: relative; z-index: 1;">
+                                <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(148, 163, 184, 0.06); border: 1px solid rgba(148, 163, 184, 0.1); display: flex; align-items: center; justify-content: center;">
+                                    <div style="width: 8px; height: 8px; border-radius: 50%; background: #334155;"></div>
+                                </div>
+                            </div>
+                            <div style="flex: 1; padding-top: 2px; opacity: 0.4;">
+                                <div style="font-size: 12px; font-weight: 600; color: #94a3b8;">Update item & send notification</div>
+                                <div style="font-size: 11px; color: #475569;">SharePoint -- Update item + Send email</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Flow run footer -->
+                <div style="padding: 10px 16px; border-top: 1px solid rgba(148, 163, 184, 0.06); display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 10px; color: #475569;">Duration:</span>
+                        <span style="font-size: 11px; font-weight: 500; color: #94a3b8; font-family: monospace;">00:02:14</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 10px; color: #475569;">4/6 steps</span>
+                        <div class="progress-bar" style="width: 60px;">
+                            <div class="progress-fill" style="width: 66%; background: linear-gradient(90deg, #8b5cf6, #a78bfa);"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM: Teams Notification + Toast -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" class="fade-in-delayed-2">
+
+            <!-- Teams Adaptive Card Mockup -->
+            <div class="teams-card" style="padding: 14px 16px;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <rect width="20" height="20" rx="4" fill="#6366f1"/>
+                        <path d="M5 7h10M5 10h6M5 13h8" stroke="white" stroke-width="1.3" stroke-linecap="round"/>
+                    </svg>
+                    <div>
+                        <div style="font-size: 12px; font-weight: 600; color: #f1f5f9;">Approval Request via Microsoft Teams</div>
+                        <div style="font-size: 10px; color: #64748b;">Workflow Automation Bot &bull; Just now</div>
+                    </div>
+                </div>
+
+                <div class="glass-bright" style="padding: 10px 12px; margin-bottom: 10px;">
+                    <div style="display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 11px;">
+                        <span style="color: #64748b;">Title:</span>
+                        <span style="color: #e2e8f0; font-weight: 500;">Q1 Budget Proposal</span>
+                        <span style="color: #64748b;">Submitted by:</span>
+                        <span style="color: #e2e8f0;">Sarah Miller</span>
+                        <span style="color: #64748b;">Priority:</span>
+                        <span style="color: #f87171; font-weight: 500;">High</span>
+                        <span style="color: #64748b;">Stage:</span>
+                        <span style="color: #a78bfa; font-weight: 500;">Department Head Review</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="padding: 5px 20px; border-radius: 6px; background: rgba(74, 222, 128, 0.12); border: 1px solid rgba(74, 222, 128, 0.25); color: #4ade80; font-size: 12px; font-weight: 600; cursor: pointer;">
+                        Approve
+                    </div>
+                    <div style="padding: 5px 20px; border-radius: 6px; background: rgba(248, 113, 113, 0.10); border: 1px solid rgba(248, 113, 113, 0.2); color: #f87171; font-size: 12px; font-weight: 600; cursor: pointer;">
+                        Reject
+                    </div>
+                    <div style="padding: 5px 14px; border-radius: 6px; background: rgba(148, 163, 184, 0.06); border: 1px solid rgba(148, 163, 184, 0.1); color: #94a3b8; font-size: 12px; font-weight: 500; cursor: pointer;">
+                        View Details
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-time Metrics + Toast -->
+            <div style="position: relative;">
+                <div class="glass glow-indigo" style="padding: 14px 16px; height: 100%;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                        <span style="font-size: 12px; font-weight: 600; color: #f1f5f9;">Batch Operation Progress</span>
+                        <span class="badge badge-in-progress" style="font-size: 10px;"><span class="badge-dot"></span>Processing</span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                        <!-- Metric: Total -->
+                        <div>
+                            <div style="font-size: 20px; font-weight: 700; color: #f1f5f9;">4</div>
+                            <div style="font-size: 10px; color: #64748b;">Items Selected</div>
+                        </div>
+                        <!-- Metric: Approved -->
+                        <div>
+                            <div style="font-size: 20px; font-weight: 700; color: #4ade80;" id="approvedCount">3</div>
+                            <div style="font-size: 10px; color: #64748b;">Approved</div>
+                        </div>
+                        <!-- Metric: In Progress -->
+                        <div>
+                            <div style="font-size: 20px; font-weight: 700; color: #60a5fa;">1</div>
+                            <div style="font-size: 10px; color: #64748b;">In Progress</div>
+                        </div>
+                        <!-- Metric: Failed -->
+                        <div>
+                            <div style="font-size: 20px; font-weight: 700; color: #475569;">0</div>
+                            <div style="font-size: 10px; color: #64748b;">Failed</div>
+                        </div>
+                    </div>
+
+                    <!-- Overall progress -->
+                    <div style="margin-top: 10px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                            <span style="font-size: 10px; color: #64748b;">Overall Progress</span>
+                            <span style="font-size: 11px; font-weight: 600; color: #a78bfa;">75%</span>
+                        </div>
+                        <div class="progress-bar" style="height: 6px;">
+                            <div class="progress-fill" style="width: 75%; height: 100%; animation-delay: 1s;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Toast Notification -->
+                <div class="toast" style="position: absolute; top: -4px; right: 12px; z-index: 10;">
+                    <div style="background: rgba(16, 124, 16, 0.9); backdrop-filter: blur(12px); border: 1px solid rgba(74, 222, 128, 0.3); border-radius: 8px; padding: 8px 14px; display: flex; align-items: center; gap: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <circle cx="8" cy="8" r="7" fill="#4ade80" fill-opacity="0.2" stroke="#4ade80" stroke-width="1.5"/>
+                            <path d="M5 8l2 2 4-4" stroke="#4ade80" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span style="font-size: 12px; font-weight: 600; color: #dcfce7;">3 items approved successfully</span>
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="cursor: pointer; margin-left: 4px; opacity: 0.5;">
+                            <path d="M3 3l6 6M9 3l-6 6" stroke="#dcfce7" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Animated counter script -->
+    <script>
+        // Animate the approved count from 0 to 3
+        const countEl = document.getElementById('approvedCount');
+        let count = 0;
+        const targetCount = 3;
+        const interval = setInterval(() => {
+            count++;
+            countEl.textContent = count;
+            countEl.style.transform = 'scale(1.2)';
+            setTimeout(() => { countEl.style.transform = 'scale(1)'; }, 150);
+            if (count >= targetCount) clearInterval(interval);
+        }, 1200);
+
+        // After 5 seconds, switch one badge from "Under Review" to "Approved" with animation
+        setTimeout(() => {
+            const badges = document.querySelectorAll('.badge-review.badge-pulse');
+            if (badges.length > 0) {
+                const badge = badges[0];
+                badge.style.transition = 'all 0.3s ease';
+                badge.style.transform = 'scale(0.9)';
+                badge.style.opacity = '0.5';
+                setTimeout(() => {
+                    badge.className = 'badge badge-approved';
+                    badge.innerHTML = '<span class="badge-dot"></span>Approved';
+                    badge.style.transform = 'scale(1.1)';
+                    badge.style.opacity = '1';
+                    setTimeout(() => {
+                        badge.style.transform = 'scale(1)';
+                    }, 200);
+                }, 300);
+            }
+        }, 5000);
+
+        // After 8 seconds, switch another badge
+        setTimeout(() => {
+            const badges = document.querySelectorAll('.badge-review.badge-pulse');
+            if (badges.length > 0) {
+                const badge = badges[0];
+                badge.style.transition = 'all 0.3s ease';
+                badge.style.transform = 'scale(0.9)';
+                badge.style.opacity = '0.5';
+                setTimeout(() => {
+                    badge.className = 'badge badge-approved';
+                    badge.innerHTML = '<span class="badge-dot"></span>Approved';
+                    badge.style.transform = 'scale(1.1)';
+                    badge.style.opacity = '1';
+                    setTimeout(() => {
+                        badge.style.transform = 'scale(1)';
+                    }, 200);
+                }, 300);
+            }
+        }, 8000);
+    </script>
+</body>
+</html>
