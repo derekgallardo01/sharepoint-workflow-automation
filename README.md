@@ -7,6 +7,8 @@
 
 A production-ready SharePoint Online solution demonstrating list-based workflow management with Power Automate flows, SPFx extensions, and PnP provisioning templates. Built to showcase enterprise patterns for approval routing, status tracking, cross-list synchronization, and automated lifecycle management.
 
+![SharePoint Workflow Automation Hero](docs/screenshots/hero-workflow.png)
+
 ## Overview
 
 This project provides a complete, deployable workflow automation platform on SharePoint Online. It combines four custom SharePoint lists, five Power Automate cloud flows, and two SPFx extensions into a cohesive solution that handles the full lifecycle of project tracking, document approvals, change requests, and employee onboarding.
@@ -196,7 +198,17 @@ flowchart TD
 
 ## Screenshots
 
-Interactive HTML mockups of the solution UI. Open each file in a browser to view.
+| | |
+|---|---|
+| ![Project Tracker List](docs/screenshots/project-tracker.png) | ![Bulk Actions](docs/screenshots/bulk-actions.png) |
+| *Project Tracker List* | *Bulk Actions* |
+| ![Assign Panel](docs/screenshots/assign-panel.png) | ![Approval Flow Run](docs/screenshots/approval-flow.png) |
+| *Assign Panel* | *Approval Flow Run* |
+| ![Status Badges](docs/screenshots/status-badges.png) | |
+| *Status Badges* | |
+
+<details>
+<summary>Interactive HTML mockups (open in browser)</summary>
 
 | Mockup | File | Description |
 |--------|------|-------------|
@@ -206,6 +218,7 @@ Interactive HTML mockups of the solution UI. Open each file in a browser to view
 | Assign Panel | [`docs/screenshots/assign-panel.html`](docs/screenshots/assign-panel.html) | Fluent UI side panel with people picker, person suggestions, and assignment processing |
 | Approval Flow Run | [`docs/screenshots/approval-flow.html`](docs/screenshots/approval-flow.html) | Power Automate flow run timeline showing all 6 steps succeeded with approval outcomes |
 | Status Badges | [`docs/screenshots/status-badges.html`](docs/screenshots/status-badges.html) | Showcase of all 5 status badge states with in-context list preview and technical details |
+</details>
 
 ## Status Badge Reference
 
