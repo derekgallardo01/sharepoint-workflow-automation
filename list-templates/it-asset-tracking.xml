@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="utf-8"?>
+<pnp:Provisioning xmlns:pnp="http://schemas.dev.office.com/PnP/2023/01/ProvisioningSchema">
+  <pnp:Preferences Generator="PnP" />
+  <pnp:Templates ID="CONTAINER-TEMPLATE-IT-ASSET-TRACKING">
+    <pnp:ProvisioningTemplate ID="TEMPLATE-IT-ASSET-TRACKING" Version="1" BaseSiteTemplate="STS#3">
+
+      <pnp:SiteFields>
+        <Field ID="{A1B2C3D4-1001-4A5B-8C9D-E0F1A2B3C4D5}"
+               Name="AssetName"
+               DisplayName="Asset Name"
+               Type="Text"
+               MaxLength="255"
+               Required="TRUE"
+               Group="Workflow Automation" />
+
+        <Field ID="{A1B2C3D4-1002-4A5B-8C9D-E0F1A2B3C4D5}"
+               Name="AssetType"
+               DisplayName="Asset Type"
+               Type="Choice"
+               Required="TRUE"
+               Group="Workflow Automation">
+          <CHOICES>
+            <CHOICE>Laptop</CHOICE>
+            <CHOICE>Desktop</CHOICE>
+            <CHOICE>Monitor</CHOICE>
+            <CHOICE>Phone</CHOICE>
+            <CHOICE>Tablet</CHOICE>
+          </CHOICES>
+          <Default>Laptop</Default>
+        </Field>
+
+        <Field ID="{A1B2C3D4-1003-4A5B-8C9D-E0F1A2B3C4D5}"
+               Name="SerialNumber"
+               DisplayName="Serial Number"
+               Type="Text"
+               MaxLength="100"
+               Required="TRUE"
+               Indexed="TRUE"
+               EnforceUniqueValues="TRUE"
+               Group="Workflow Automation" />
+
+        <Field ID="{A1B2C3D4-1004-4A5B-8C9D-E0F1A2B3C4D5}"
+               Name="AssetAssignedTo"
+               DisplayName="Assigned To"
+               Type="User"
+               UserSelectionMode="PeopleOnly"
+               Group="Workflow Automation" />
+
+        <Field ID="{A1B2C3D4-1005-4A5B-8C9D-E0F1A2B3C4D5}"
+               Name="AssetDepartment"
+               DisplayName="Department"
+               Type="Choice"
+               Group="Workflow Automation">
+          <CHOICES>
+            <CHOICE>IT</CHOICE>
+            <CHOICE>Engineering</CHOICE>
+            <CHOICE>Marketing</CHOICE>
+            <CHOICE>Sales</CHOICE>
+            <CHOICE>Finance</CHOICE>
+            <CHOICE>HR</CHOICE>
+            <CHOICE>Operations</CHOICE>
+            <CHOICE>Legal</CHOICE>
+            <CHOICE>Executive</CHOICE>
+          </CHOICES>
+        </Field>
+
+        <Field ID="{A1B2C3D4-1006-4A5B-8C9D-E0F1A2B3C4D5}"
+               Name="PurchaseDate"
+               DisplayName="Purchase Date"
+               Type="DateTime"
+               Format="DateOnly"
+               Group="Workflow Automation" />
+
+        <Field ID="{A1B2C3D4-1007-4A5B-8C9D-E0F1A2B3C4D5}"
+               Name="WarrantyExpiry"
+               DisplayName="Warranty Expiry"
+               Type="DateTime"
+               Format="DateOnly"
+               Group="Workflow Automation" />
+
+        <Field ID="{A1B2C3D4-1008-4A5B-8C9D-E0F1A2B3C4D5}"
+               Name="AssetStatus"
+               DisplayName="Status"
+               Type="Choice"
+               Required="TRUE"
+               Group="Workflow Automation">
+          <CHOICES>
+            <CHOICE>Active</CHOICE>
+            <CHOICE>Retired</CHOICE>
+            <CHOICE>Repair</CHOICE>
+            <CHOICE>Lost</CHOICE>
+          </CHOICES>
+          <Default>Active</Default>
+        </Field>
+
+        <Field ID="{A1B2C3D4-1009-4A5B-8C9D-E0F1A2B3C4D5}"
+               Name="AssetLocation"
+               DisplayName="Location"
+               Type="Text"
+               MaxLength="255"
+               Group="Workflow Automation" />
+
+        <Field ID="{A1B2C3D4-100A-4A5B-8C9D-E0F1A2B3C4D5}"
+               Name="AssetNotes"
+               DisplayName="Notes"
+               Type="Note"
+               RichText="TRUE"
+               NumLines="6"
+               Group="Workflow Automation" />
+      </pnp:SiteFields>
+
+      <pnp:ContentTypes>
+        <pnp:ContentType ID="0x0100A1B2C3D4E5F6A7B8C9D0E1F2A3B4"
+                         Name="ITAssetItem"
+                         Description="Content type for IT asset tracking items"
+                         Group="Workflow Automation">
+          <pnp:FieldRefs>
+            <pnp:FieldRef ID="{A1B2C3D4-1001-4A5B-8C9D-E0F1A2B3C4D5}" Name="AssetName" Required="true" />
+            <pnp:FieldRef ID="{A1B2C3D4-1002-4A5B-8C9D-E0F1A2B3C4D5}" Name="AssetType" Required="true" />
+            <pnp:FieldRef ID="{A1B2C3D4-1003-4A5B-8C9D-E0F1A2B3C4D5}" Name="SerialNumber" Required="true" />
+            <pnp:FieldRef ID="{A1B2C3D4-1004-4A5B-8C9D-E0F1A2B3C4D5}" Name="AssetAssignedTo" />
+            <pnp:FieldRef ID="{A1B2C3D4-1005-4A5B-8C9D-E0F1A2B3C4D5}" Name="AssetDepartment" />
+            <pnp:FieldRef ID="{A1B2C3D4-1006-4A5B-8C9D-E0F1A2B3C4D5}" Name="PurchaseDate" />
+            <pnp:FieldRef ID="{A1B2C3D4-1007-4A5B-8C9D-E0F1A2B3C4D5}" Name="WarrantyExpiry" />
+            <pnp:FieldRef ID="{A1B2C3D4-1008-4A5B-8C9D-E0F1A2B3C4D5}" Name="AssetStatus" Required="true" />
+            <pnp:FieldRef ID="{A1B2C3D4-1009-4A5B-8C9D-E0F1A2B3C4D5}" Name="AssetLocation" />
+            <pnp:FieldRef ID="{A1B2C3D4-100A-4A5B-8C9D-E0F1A2B3C4D5}" Name="AssetNotes" />
+          </pnp:FieldRefs>
+        </pnp:ContentType>
+      </pnp:ContentTypes>
+
+      <pnp:Lists>
+        <pnp:ListInstance Title="IT Asset Tracking"
+                         Description="Track IT hardware assets including laptops, desktops, monitors, phones, and tablets with assignment, warranty, and status tracking."
+                         TemplateType="100"
+                         Url="Lists/ITAssetTracking"
+                         EnableVersioning="true"
+                         MajorVersionLimit="50"
+                         ContentTypesEnabled="true">
+
+          <pnp:ContentTypeBindings>
+            <pnp:ContentTypeBinding ContentTypeID="0x0100A1B2C3D4E5F6A7B8C9D0E1F2A3B4" Default="true" />
+            <pnp:ContentTypeBinding ContentTypeID="0x01" Remove="true" />
+          </pnp:ContentTypeBindings>
+
+          <pnp:Views>
+            <!-- All Assets (default) -->
+            <View DisplayName="All Assets" DefaultView="TRUE" MobileDefaultView="TRUE" MobileView="TRUE"
+                  Type="HTML" BaseViewID="1" Scope="Recursive"
+                  RowLimit="30" Paged="TRUE">
+              <ViewFields>
+                <FieldRef Name="AssetName" />
+                <FieldRef Name="AssetType" />
+                <FieldRef Name="SerialNumber" />
+                <FieldRef Name="AssetAssignedTo" />
+                <FieldRef Name="AssetDepartment" />
+                <FieldRef Name="AssetStatus" />
+                <FieldRef Name="AssetLocation" />
+              </ViewFields>
+              <Query>
+                <OrderBy>
+                  <FieldRef Name="AssetName" Ascending="TRUE" />
+                </OrderBy>
+              </Query>
+            </View>
+
+            <!-- By Department -->
+            <View DisplayName="By Department" Type="HTML" Scope="Recursive"
+                  RowLimit="30" Paged="TRUE">
+              <ViewFields>
+                <FieldRef Name="AssetName" />
+                <FieldRef Name="AssetType" />
+                <FieldRef Name="SerialNumber" />
+                <FieldRef Name="AssetAssignedTo" />
+                <FieldRef Name="AssetStatus" />
+              </ViewFields>
+              <Query>
+                <GroupBy Collapse="TRUE" GroupLimit="30">
+                  <FieldRef Name="AssetDepartment" />
+                </GroupBy>
+                <OrderBy>
+                  <FieldRef Name="AssetName" Ascending="TRUE" />
+                </OrderBy>
+              </Query>
+            </View>
+
+            <!-- By Type -->
+            <View DisplayName="By Type" Type="HTML" Scope="Recursive"
+                  RowLimit="30" Paged="TRUE">
+              <ViewFields>
+                <FieldRef Name="AssetName" />
+                <FieldRef Name="SerialNumber" />
+                <FieldRef Name="AssetAssignedTo" />
+                <FieldRef Name="AssetDepartment" />
+                <FieldRef Name="AssetStatus" />
+                <FieldRef Name="PurchaseDate" />
+              </ViewFields>
+              <Query>
+                <GroupBy Collapse="TRUE" GroupLimit="30">
+                  <FieldRef Name="AssetType" />
+                </GroupBy>
+                <OrderBy>
+                  <FieldRef Name="AssetName" Ascending="TRUE" />
+                </OrderBy>
+              </Query>
+            </View>
+
+            <!-- Warranty Expiring (next 30 days) -->
+            <View DisplayName="Warranty Expiring" Type="HTML" Scope="Recursive"
+                  RowLimit="30" Paged="TRUE">
+              <ViewFields>
+                <FieldRef Name="AssetName" />
+                <FieldRef Name="AssetType" />
+                <FieldRef Name="SerialNumber" />
+                <FieldRef Name="AssetAssignedTo" />
+                <FieldRef Name="WarrantyExpiry" />
+                <FieldRef Name="AssetStatus" />
+              </ViewFields>
+              <Query>
+                <Where>
+                  <And>
+                    <Geq>
+                      <FieldRef Name="WarrantyExpiry" />
+                      <Value Type="DateTime"><Today /></Value>
+                    </Geq>
+                    <Leq>
+                      <FieldRef Name="WarrantyExpiry" />
+                      <Value Type="DateTime"><Today OffsetDays="30" /></Value>
+                    </Leq>
+                  </And>
+                </Where>
+                <OrderBy>
+                  <FieldRef Name="WarrantyExpiry" Ascending="TRUE" />
+                </OrderBy>
+              </Query>
+            </View>
+
+            <!-- Retired Assets -->
+            <View DisplayName="Retired Assets" Type="HTML" Scope="Recursive"
+                  RowLimit="30" Paged="TRUE">
+              <ViewFields>
+                <FieldRef Name="AssetName" />
+                <FieldRef Name="AssetType" />
+                <FieldRef Name="SerialNumber" />
+                <FieldRef Name="AssetDepartment" />
+                <FieldRef Name="PurchaseDate" />
+                <FieldRef Name="AssetNotes" />
+              </ViewFields>
+              <Query>
+                <Where>
+                  <Eq>
+                    <FieldRef Name="AssetStatus" />
+                    <Value Type="Choice">Retired</Value>
+                  </Eq>
+                </Where>
+                <OrderBy>
+                  <FieldRef Name="AssetName" Ascending="TRUE" />
+                </OrderBy>
+              </Query>
+            </View>
+          </pnp:Views>
+        </pnp:ListInstance>
+      </pnp:Lists>
+
+    </pnp:ProvisioningTemplate>
+  </pnp:Templates>
+</pnp:Provisioning>

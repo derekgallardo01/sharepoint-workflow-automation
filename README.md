@@ -95,6 +95,7 @@ graph TD
 - **Document Approval Queue** -- Manage document review workflows with submitter/reviewer tracking
 - **Change Request Log** -- Log change requests with impact assessment, system categorization, and resolution tracking
 - **Employee Onboarding Checklist** -- Department-based onboarding task management for new hires
+- **IT Asset Tracking** -- Hardware asset lifecycle management with serial numbers, warranty tracking, department assignment, and status monitoring
 
 ### Power Automate Flows
 
@@ -263,6 +264,7 @@ This produces `sharepoint/solution/sharepoint-workflow-extensions.sppkg`.
 | Document Approval Queue | Document review workflow | 9 | 4 (All Items, Pending, My Submissions, Recently Reviewed) | ApprovalItem |
 | Change Request Log | Change management tracking | 10 | 5 (All, Open, My Requests, By System, By Impact) | ChangeRequest |
 | Employee Onboarding | New hire task checklist | 9 | 4 (All Tasks, By Department, By New Hire, Incomplete) | OnboardingTask |
+| IT Asset Tracking | Hardware asset lifecycle management | 10 | 5 (All Assets, By Department, By Type, Warranty Expiring, Retired Assets) | ITAssetItem |
 
 ## Flow Reference
 
@@ -278,7 +280,7 @@ This produces `sharepoint/solution/sharepoint-workflow-extensions.sppkg`.
 
 | Extension | Type | Actions/Behavior |
 |-----------|------|------------------|
-| BulkActionsCommandSet | ListView Command Set | Bulk Approve, Export to CSV, Assign To |
+| BulkActionsCommandSet | ListView Command Set | Bulk Approve, Export (CSV/Excel/JSON with column selection), Assign To |
 | StatusFieldCustomizer | Field Customizer | Color-coded badges for Not Started, In Progress, Under Review, Approved, Rejected |
 
 ## Project Structure
@@ -289,7 +291,7 @@ sharepoint-workflow-automation/
 │   ├── config/                    # SPFx build configuration
 │   ├── src/extensions/
 │   │   ├── bulkActions/           # ListView Command Set
-│   │   │   ├── components/        # React components (AssignPanel)
+│   │   │   ├── components/        # React components (AssignPanel, ExportDialog)
 │   │   │   ├── BulkActionsCommandSet.ts
 │   │   │   └── BulkActionsCommandSet.manifest.json
 │   │   └── statusField/           # Field Customizer
@@ -303,7 +305,8 @@ sharepoint-workflow-automation/
 │   ├── project-tracker.xml
 │   ├── document-approval.xml
 │   ├── change-request.xml
-│   └── employee-onboarding.xml
+│   ├── employee-onboarding.xml
+│   └── it-asset-tracking.xml
 ├── power-automate-flows/          # Flow definitions (Logic Apps JSON)
 │   ├── multi-stage-approval.json
 │   ├── conditional-notifications.json
@@ -313,7 +316,8 @@ sharepoint-workflow-automation/
 │   └── README.md
 ├── provisioning/                  # Deployment scripts
 │   ├── Deploy-WorkflowSolution.ps1
-│   └── Remove-WorkflowSolution.ps1
+│   ├── Remove-WorkflowSolution.ps1
+│   └── Set-ListPermissions.ps1
 ├── docs/
 │   ├── diagrams/                  # Architecture & component diagrams
 │   │   ├── architecture.md
@@ -351,13 +355,40 @@ To remove the solution from a dev/test environment:
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Commit your changes (`git commit -m 'Add your feature'`)
-4. Push to the branch (`git push origin feature/your-feature`)
-5. Open a Pull Request
+See **[CONTRIBUTING.md](CONTRIBUTING.md)** for prerequisites, setup instructions, development workflow, and code style guidelines.
 
-Please follow existing code conventions, test with `gulp serve` before submitting, and include screenshots for UI changes.
+---
+
+## Changelog
+
+### v1.1.0
+
+- Added IT Asset Tracking list template with 10 fields and 5 views (All Assets, By Department, By Type, Warranty Expiring, Retired Assets)
+- Added Export Dialog component with format selection (CSV/Excel/JSON), column checkboxes, and date range filtering
+- Added `Set-ListPermissions.ps1` for single or bulk permission management with JSON config support
+- Updated SPFx extension reference to reflect enhanced export capabilities
+
+### v1.0.0
+
+- Four list templates: Project Tracker, Document Approval Queue, Change Request Log, Employee Onboarding
+- SPFx extensions: Bulk Actions Command Set (Bulk Approve, Export to CSV, Assign To) and Status Field Customizer
+- Five Power Automate flows: Multi-Stage Approval, Conditional Notifications, Weekly Status Report, Cross-List Sync, Lifecycle Management
+- PnP provisioning and removal scripts
+- Architecture diagrams, flow diagrams, and HTML screenshot mockups
+
+---
+
+## Roadmap
+
+Planned features for future releases:
+
+- **Approval dashboard web part** -- SPFx web part showing pending approvals across all lists with one-click approve/reject
+- **Microsoft Teams integration** -- Adaptive Cards for approval requests and status notifications in Teams channels
+- **Mobile-optimized views** -- Responsive list views and SPFx extensions optimized for SharePoint mobile app
+- **Power Automate flow templates** -- Additional flows for SLA tracking, capacity planning, and vendor management
+- **Bulk import/export tool** -- PowerShell script for bulk-populating lists from CSV with field mapping
+
+---
 
 ## License
 
