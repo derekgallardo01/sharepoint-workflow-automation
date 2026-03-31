@@ -83,6 +83,7 @@ graph TD
   - Bulk Approve: Update status on all selected items in a single batched request
   - Export to CSV: Download selected items as a UTF-8 CSV file with BOM
   - Assign To: Open a people picker panel to reassign items in bulk
+  - **Progress Panel**: Real-time progress bar during bulk operations with item-by-item status, error details, per-item and bulk retry, cancel button, and completion summary
 
 - **Status Field Customizer** -- Color-coded badge rendering for status columns
   - Not Started (gray), In Progress (blue), Under Review (orange), Approved (green), Rejected (red)
@@ -104,6 +105,7 @@ graph TD
 - **Weekly Status Report** -- Generates an HTML report with summary cards, converts to PDF, saves to SharePoint, and emails stakeholders
 - **Cross-List Sync** -- Hub-to-spoke data synchronization with hub-wins conflict resolution and audit logging
 - **Lifecycle Management** -- Daily archival of 90-day-old completed items, due-date reminders, and overdue status updates
+- **Teams Adaptive Card Approval** -- Posts an Adaptive Card to Teams with item details, approve/reject buttons, handles response directly in Teams, updates SharePoint item status, and sends confirmation card
 
 ## Flow Diagrams
 
@@ -275,12 +277,13 @@ This produces `sharepoint/solution/sharepoint-workflow-extensions.sppkg`.
 | Weekly Status Report | Recurrence (Mon 8 AM) | Query items, HTML table, PDF convert, email | SharePoint, Encodian, Office 365 |
 | Cross-List Sync | Item modified | Match spoke items, hub-wins update, audit log | SharePoint |
 | Lifecycle Management | Recurrence (daily 6 AM) | Archive old items, send reminders, mark overdue | SharePoint, Office 365 |
+| Teams Adaptive Card Approval | Item created/modified (status = Pending) | Post Adaptive Card, handle response, update item, send confirmation | SharePoint, Teams, Office 365 |
 
 ## SPFx Extension Reference
 
 | Extension | Type | Actions/Behavior |
 |-----------|------|------------------|
-| BulkActionsCommandSet | ListView Command Set | Bulk Approve, Export (CSV/Excel/JSON with column selection), Assign To |
+| BulkActionsCommandSet | ListView Command Set | Bulk Approve, Export (CSV/Excel/JSON with column selection), Assign To, Progress Panel |
 | StatusFieldCustomizer | Field Customizer | Color-coded badges for Not Started, In Progress, Under Review, Approved, Rejected |
 
 ## Project Structure
@@ -291,7 +294,7 @@ sharepoint-workflow-automation/
 │   ├── config/                    # SPFx build configuration
 │   ├── src/extensions/
 │   │   ├── bulkActions/           # ListView Command Set
-│   │   │   ├── components/        # React components (AssignPanel, ExportDialog)
+│   │   │   ├── components/        # React components (AssignPanel, ExportDialog, ProgressPanel)
 │   │   │   ├── BulkActionsCommandSet.ts
 │   │   │   └── BulkActionsCommandSet.manifest.json
 │   │   └── statusField/           # Field Customizer
@@ -313,11 +316,13 @@ sharepoint-workflow-automation/
 │   ├── scheduled-report.json
 │   ├── cross-list-sync.json
 │   ├── lifecycle-management.json
+│   ├── teams-adaptive-card-approval.json  # Teams Adaptive Card approval flow
 │   └── README.md
 ├── provisioning/                  # Deployment scripts
 │   ├── Deploy-WorkflowSolution.ps1
 │   ├── Remove-WorkflowSolution.ps1
-│   └── Set-ListPermissions.ps1
+│   ├── Set-ListPermissions.ps1
+│   └── New-SiteFromTemplate.ps1   # Site provisioning from PnP template
 ├── docs/
 │   ├── diagrams/                  # Architecture & component diagrams
 │   │   ├── architecture.md
@@ -360,6 +365,12 @@ See **[CONTRIBUTING.md](CONTRIBUTING.md)** for prerequisites, setup instructions
 ---
 
 ## Changelog
+
+### v1.2.0
+
+- Added `ProgressPanel.tsx` batch operation progress panel with real-time progress bar, item-by-item status tracking, error details with per-item and bulk retry, cancel operation, and completion summary
+- Added `teams-adaptive-card-approval.json` Power Automate flow for Teams-based approvals with Adaptive Cards, in-Teams response handling, SharePoint status updates, and confirmation cards
+- Added `New-SiteFromTemplate.ps1` provisioning script for end-to-end site creation from PnP templates with list provisioning, theme, permissions, SPFx extension registration, and post-deployment report
 
 ### v1.1.0
 
