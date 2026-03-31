@@ -1,0 +1,329 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "title": "Teams Adaptive Card Approval",
+    "description": "Posts an Adaptive Card to Microsoft Teams when a SharePoint item requires approval. Approvers can approve or reject directly in Teams without email. The flow updates the SharePoint item and sends a confirmation card.",
+    "category": "Approval",
+    "prerequisites": [
+      "SharePoint Online connection",
+      "Microsoft Teams connection",
+      "Target SharePoint list with Status, ApproverEmail, and ApproverComments fields"
+    ],
+    "parameters": {
+      "SharePointSiteUrl": "https://contoso.sharepoint.com/sites/workflow-demo",
+      "ListName": "Document Approval Queue",
+      "TeamsChannelId": "19:xxxxxxxx@thread.tacv2",
+      "TeamsGroupId": "00000000-0000-0000-0000-000000000000"
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "defaultValue": {},
+      "type": "Object"
+    },
+    "SharePointSiteUrl": {
+      "defaultValue": "https://contoso.sharepoint.com/sites/workflow-demo",
+      "type": "String",
+      "metadata": {
+        "schemaName": "SharePointSiteUrl",
+        "description": "Full URL of the SharePoint site containing the approval list."
+      }
+    },
+    "ListName": {
+      "defaultValue": "Document Approval Queue",
+      "type": "String",
+      "metadata": {
+        "schemaName": "ListName",
+        "description": "Name of the SharePoint list that triggers the approval."
+      }
+    },
+    "TeamsChannelId": {
+      "defaultValue": "",
+      "type": "String",
+      "metadata": {
+        "schemaName": "TeamsChannelId",
+        "description": "The Teams channel ID where approval cards are posted."
+      }
+    },
+    "TeamsGroupId": {
+      "defaultValue": "",
+      "type": "String",
+      "metadata": {
+        "schemaName": "TeamsGroupId",
+        "description": "The Microsoft 365 Group ID (Team ID) for the Teams channel."
+      }
+    }
+  },
+  "triggers": {
+    "When_an_item_is_created_or_modified": {
+      "type": "ApiConnectionWebhook",
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+          }
+        },
+        "body": {
+          "NotificationUrl": "@{listCallbackUrl()}"
+        },
+        "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('SharePointSiteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('ListName')))}/onupdateditems"
+      },
+      "conditions": [
+        {
+          "expression": "@equals(triggerBody()?['Status']?['Value'], 'Pending Approval')"
+        }
+      ]
+    }
+  },
+  "actions": {
+    "Initialize_ItemTitle": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "ItemTitle",
+            "type": "string",
+            "value": "@triggerBody()?['Title']"
+          }
+        ]
+      },
+      "runAfter": {}
+    },
+    "Initialize_ItemId": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "ItemId",
+            "type": "integer",
+            "value": "@triggerBody()?['ID']"
+          }
+        ]
+      },
+      "runAfter": {
+        "Initialize_ItemTitle": ["Succeeded"]
+      }
+    },
+    "Initialize_SubmitterEmail": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "SubmitterEmail",
+            "type": "string",
+            "value": "@triggerBody()?['Author']?['Email']"
+          }
+        ]
+      },
+      "runAfter": {
+        "Initialize_ItemId": ["Succeeded"]
+      }
+    },
+    "Initialize_ApprovalOutcome": {
+      "type": "InitializeVariable",
+      "inputs": {
+        "variables": [
+          {
+            "name": "ApprovalOutcome",
+            "type": "string",
+            "value": ""
+          }
+        ]
+      },
+      "runAfter": {
+        "Initialize_SubmitterEmail": ["Succeeded"]
+      }
+    },
+    "Post_Adaptive_Card_and_wait_for_response": {
+      "type": "ApiConnectionWebhook",
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['teams']['connectionId']"
+          }
+        },
+        "body": {
+          "notificationUrl": "@{listCallbackUrl()}",
+          "body": {
+            "messageBody": "{\"type\":\"AdaptiveCard\",\"$schema\":\"http://adaptivecards.io/schemas/adaptive-card.json\",\"version\":\"1.4\",\"body\":[{\"type\":\"Container\",\"style\":\"emphasis\",\"items\":[{\"type\":\"ColumnSet\",\"columns\":[{\"type\":\"Column\",\"width\":\"auto\",\"items\":[{\"type\":\"Image\",\"url\":\"https://adaptivecards.io/content/approval.png\",\"size\":\"Small\"}]},{\"type\":\"Column\",\"width\":\"stretch\",\"items\":[{\"type\":\"TextBlock\",\"text\":\"Approval Required\",\"weight\":\"Bolder\",\"size\":\"Large\",\"wrap\":true},{\"type\":\"TextBlock\",\"text\":\"A document requires your review.\",\"spacing\":\"None\",\"isSubtle\":true,\"wrap\":true}]}]}]},{\"type\":\"Container\",\"items\":[{\"type\":\"FactSet\",\"facts\":[{\"title\":\"Title:\",\"value\":\"@{variables('ItemTitle')}\"},{\"title\":\"Submitted by:\",\"value\":\"@{variables('SubmitterEmail')}\"},{\"title\":\"Submitted on:\",\"value\":\"@{formatDateTime(triggerBody()?['Created'], 'yyyy-MM-dd HH:mm')}\"},{\"title\":\"Priority:\",\"value\":\"@{triggerBody()?['Priority']?['Value']}\"}]},{\"type\":\"TextBlock\",\"text\":\"Description\",\"weight\":\"Bolder\",\"wrap\":true,\"spacing\":\"Medium\"},{\"type\":\"TextBlock\",\"text\":\"@{triggerBody()?['Description']}\",\"wrap\":true,\"isSubtle\":true}]},{\"type\":\"Container\",\"items\":[{\"type\":\"TextBlock\",\"text\":\"Comments (optional):\",\"weight\":\"Bolder\",\"wrap\":true},{\"type\":\"Input.Text\",\"id\":\"approverComments\",\"placeholder\":\"Enter your comments here...\",\"isMultiline\":true,\"maxLength\":500}]}],\"actions\":[{\"type\":\"Action.Submit\",\"title\":\"Approve\",\"style\":\"positive\",\"data\":{\"action\":\"approve\"}},{\"type\":\"Action.Submit\",\"title\":\"Reject\",\"style\":\"destructive\",\"data\":{\"action\":\"reject\"}}]}",
+            "recipient": {
+              "channelId": "@parameters('TeamsChannelId')",
+              "groupId": "@parameters('TeamsGroupId')"
+            },
+            "updateMessage": "Response recorded. Thank you!"
+          }
+        },
+        "path": "/v1.0/teams/conversation/gatherinput/poster/Flow bot/location/@{encodeURIComponent('Channel')}/@{encodeURIComponent(parameters('TeamsGroupId'))}"
+      },
+      "runAfter": {
+        "Initialize_ApprovalOutcome": ["Succeeded"]
+      }
+    },
+    "Parse_Card_Response": {
+      "type": "ParseJson",
+      "inputs": {
+        "content": "@body('Post_Adaptive_Card_and_wait_for_response')",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "submitActionId": { "type": "string" },
+            "data": {
+              "type": "object",
+              "properties": {
+                "action": { "type": "string" },
+                "approverComments": { "type": "string" }
+              }
+            },
+            "responder": {
+              "type": "object",
+              "properties": {
+                "userPrincipalName": { "type": "string" },
+                "displayName": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "runAfter": {
+        "Post_Adaptive_Card_and_wait_for_response": ["Succeeded"]
+      }
+    },
+    "Set_ApprovalOutcome": {
+      "type": "SetVariable",
+      "inputs": {
+        "name": "ApprovalOutcome",
+        "value": "@body('Parse_Card_Response')?['data']?['action']"
+      },
+      "runAfter": {
+        "Parse_Card_Response": ["Succeeded"]
+      }
+    },
+    "Condition_Approve_or_Reject": {
+      "type": "If",
+      "expression": {
+        "and": [
+          {
+            "equals": ["@variables('ApprovalOutcome')", "approve"]
+          }
+        ]
+      },
+      "actions": {
+        "Update_Item_Approved": {
+          "type": "ApiConnection",
+          "inputs": {
+            "host": {
+              "connection": {
+                "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+              }
+            },
+            "method": "patch",
+            "body": {
+              "Status": {
+                "Value": "Approved"
+              },
+              "ApproverComments": "@{body('Parse_Card_Response')?['data']?['approverComments']}",
+              "ApprovedBy": "@{body('Parse_Card_Response')?['responder']?['displayName']}",
+              "ApprovedDate": "@{utcNow()}"
+            },
+            "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('SharePointSiteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('ListName')))}/items/@{variables('ItemId')}"
+          }
+        },
+        "Post_Confirmation_Card_Approved": {
+          "type": "ApiConnection",
+          "inputs": {
+            "host": {
+              "connection": {
+                "name": "@parameters('$connections')['teams']['connectionId']"
+              }
+            },
+            "method": "post",
+            "body": {
+              "messageBody": "{\"type\":\"AdaptiveCard\",\"$schema\":\"http://adaptivecards.io/schemas/adaptive-card.json\",\"version\":\"1.4\",\"body\":[{\"type\":\"Container\",\"style\":\"good\",\"items\":[{\"type\":\"TextBlock\",\"text\":\"Approved\",\"weight\":\"Bolder\",\"size\":\"Large\",\"color\":\"Good\",\"wrap\":true}]},{\"type\":\"FactSet\",\"facts\":[{\"title\":\"Document:\",\"value\":\"@{variables('ItemTitle')}\"},{\"title\":\"Approved by:\",\"value\":\"@{body('Parse_Card_Response')?['responder']?['displayName']}\"},{\"title\":\"Date:\",\"value\":\"@{formatDateTime(utcNow(), 'yyyy-MM-dd HH:mm')}\"},{\"title\":\"Comments:\",\"value\":\"@{if(empty(body('Parse_Card_Response')?['data']?['approverComments']), 'None', body('Parse_Card_Response')?['data']?['approverComments'])}\"}]}]}",
+              "recipient": {
+                "channelId": "@parameters('TeamsChannelId')",
+                "groupId": "@parameters('TeamsGroupId')"
+              }
+            },
+            "path": "/v1.0/teams/conversation/adaptivecard/poster/Flow bot/location/@{encodeURIComponent('Channel')}/@{encodeURIComponent(parameters('TeamsGroupId'))}"
+          },
+          "runAfter": {
+            "Update_Item_Approved": ["Succeeded"]
+          }
+        }
+      },
+      "else": {
+        "actions": {
+          "Update_Item_Rejected": {
+            "type": "ApiConnection",
+            "inputs": {
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                }
+              },
+              "method": "patch",
+              "body": {
+                "Status": {
+                  "Value": "Rejected"
+                },
+                "ApproverComments": "@{body('Parse_Card_Response')?['data']?['approverComments']}",
+                "RejectedBy": "@{body('Parse_Card_Response')?['responder']?['displayName']}",
+                "RejectedDate": "@{utcNow()}"
+              },
+              "path": "/datasets/@{encodeURIComponent(encodeURIComponent(parameters('SharePointSiteUrl')))}/tables/@{encodeURIComponent(encodeURIComponent(parameters('ListName')))}/items/@{variables('ItemId')}"
+            }
+          },
+          "Post_Confirmation_Card_Rejected": {
+            "type": "ApiConnection",
+            "inputs": {
+              "host": {
+                "connection": {
+                  "name": "@parameters('$connections')['teams']['connectionId']"
+                }
+              },
+              "method": "post",
+              "body": {
+                "messageBody": "{\"type\":\"AdaptiveCard\",\"$schema\":\"http://adaptivecards.io/schemas/adaptive-card.json\",\"version\":\"1.4\",\"body\":[{\"type\":\"Container\",\"style\":\"attention\",\"items\":[{\"type\":\"TextBlock\",\"text\":\"Rejected\",\"weight\":\"Bolder\",\"size\":\"Large\",\"color\":\"Attention\",\"wrap\":true}]},{\"type\":\"FactSet\",\"facts\":[{\"title\":\"Document:\",\"value\":\"@{variables('ItemTitle')}\"},{\"title\":\"Rejected by:\",\"value\":\"@{body('Parse_Card_Response')?['responder']?['displayName']}\"},{\"title\":\"Date:\",\"value\":\"@{formatDateTime(utcNow(), 'yyyy-MM-dd HH:mm')}\"},{\"title\":\"Reason:\",\"value\":\"@{if(empty(body('Parse_Card_Response')?['data']?['approverComments']), 'No reason provided', body('Parse_Card_Response')?['data']?['approverComments'])}\"}]}]}",
+                "recipient": {
+                  "channelId": "@parameters('TeamsChannelId')",
+                  "groupId": "@parameters('TeamsGroupId')"
+                }
+              },
+              "path": "/v1.0/teams/conversation/adaptivecard/poster/Flow bot/location/@{encodeURIComponent('Channel')}/@{encodeURIComponent(parameters('TeamsGroupId'))}"
+            },
+            "runAfter": {
+              "Update_Item_Rejected": ["Succeeded"]
+            }
+          }
+        }
+      },
+      "runAfter": {
+        "Set_ApprovalOutcome": ["Succeeded"]
+      }
+    },
+    "Send_Notification_to_Submitter": {
+      "type": "ApiConnection",
+      "inputs": {
+        "host": {
+          "connection": {
+            "name": "@parameters('$connections')['office365']['connectionId']"
+          }
+        },
+        "method": "post",
+        "body": {
+          "To": "@{variables('SubmitterEmail')}",
+          "Subject": "Document @{variables('ApprovalOutcome')} - @{variables('ItemTitle')}",
+          "Body": "<html><body><p>Your document <strong>@{variables('ItemTitle')}</strong> has been <strong>@{variables('ApprovalOutcome')}</strong> by @{body('Parse_Card_Response')?['responder']?['displayName']}.</p><p><strong>Comments:</strong> @{if(empty(body('Parse_Card_Response')?['data']?['approverComments']), 'None', body('Parse_Card_Response')?['data']?['approverComments'])}</p><p><a href=\"@{parameters('SharePointSiteUrl')}\">View in SharePoint</a></p></body></html>",
+          "Importance": "Normal",
+          "IsHtml": true
+        },
+        "path": "/v2/Mail"
+      },
+      "runAfter": {
+        "Condition_Approve_or_Reject": ["Succeeded"]
+      }
+    }
+  },
+  "outputs": {}
+}
